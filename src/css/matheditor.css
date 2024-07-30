@@ -1,0 +1,127 @@
+
+* {
+  box-sizing: border-box;
+  position: relative;
+}
+
+@font-face {
+    font-family: 'LatinModernRoman';
+    src: url("./font/Latin-Modern-Roman-10.otf") format("opentype");
+    unicode-range: U+0020-007F, /* Basic Latin */
+                   U+2200-22FF, /* Mathematical Operators */
+                   U+2A00-2AFF, /* Supplemental Mathematical Operators */
+                   U+27C0-27EF; /* Miscellaneous Mathematical Symbols-A */
+}
+
+@font-face {
+    font-family: 'BiauKai';
+    src: local('標楷體'),
+         url('./font/edukai-5.0.woff') format('woff'),
+         url('./font/edukai-5.0.woff2') format('woff2'),
+         url('./font/edukai-5.0.tff') format('truetype');
+    unicode-range: U+4E00-9FFF;
+}
+
+body {
+    font-family: Arial, sans-serif;
+}
+
+/* ---- */
+
+main {
+    padding: 40px;
+}
+
+/* ---- */
+
+.mathnote-container {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-style: solid;
+    border-color: gray;
+    border-width: 0.5px 0px;
+}
+
+.mathnote-matheq {
+    padding: 5px;
+    border-color: gray;
+    border-style: solid;
+    border-width: 0.5px 1px;
+}
+
+.mathnote-matheq.textmode textarea.mathnote-text-textarea {
+    padding: 8.0px 10px;
+    border-width: 1px;
+    width: 100%;
+    overflow: hidden;
+    resize: none;
+    vertical-align: middle;
+    font-family: 'BiauKai', 'LatinModernRoman', 'Symbola',
+                 'Times New Roman', 'Times', serif;  
+    font-size: 1.15em;
+    border: none;
+}
+
+.mathnote-matheq.textmode .mathnote-text-textarea:focus{
+    outline: none;
+}
+
+.mathnote-matheq.focus,
+.mq-editable-field.mq-focused,
+.mq-math-mode .mq-editable-field.mq-focused {
+    box-shadow: none;
+    border-style: solid;
+    border-radius: 0px;
+/*    border-color: #6a93d2;*/
+/*    border-width: 2px 1px;*/
+
+    box-shadow: 0 0 2px #6a93d2 inset,
+                0 0 2px #6a93d2 inset;
+}
+
+.mathnote-matheq.focus {
+    box-shadow: 0 0 2px #d26a93 inset, 0 0 2px #d26a93 inset;
+}
+
+.mq-math-mode .mq-root-block {
+    padding: 10px;
+    overflow-x: scroll;
+}
+
+/* --- */
+
+.mq-editable-field,
+.mq-root-block,
+.mq-math-mode,
+.mq-math-mode .mq-root-block {
+    display: block;
+}
+
+/* --- */
+.mq-math-mode big {
+    font-size: 200%;
+}
+
+.mq-math-mode .mq-large-operator {
+    vertical-align: -0.3em;
+    padding: 0.2em;
+}
+
+.mq-math-mode .mq-sub {
+    font-size: 80%;
+    margin-right: 1px;
+}
+
+.mq-math-mode .mq-fraction {
+    font-size: 100%;
+}
+
+.mq-math-mode .mq-text-mode {
+    font-size: 100%;
+}
+
+.mq-editable-field .mq-latex-command-input {
+    border: 0.1px solid gray;
+}
+
