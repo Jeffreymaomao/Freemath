@@ -35,7 +35,6 @@ class MathEditor {
         	id: id,
         	latex: '',
             isEmpty: true,
-            hasDeletedOnce: true
         };
 
         const matheq = this.createAndAppendElement(null, "div", {
@@ -56,7 +55,6 @@ class MathEditor {
             substituteTextarea: function (){ return mathTextArea;},
             handlers: {
                 edit: function(e) {
-                    console.log(e)
                 	state.latex = mathfield.latex();
                     state.isEmpty = state.latex==='';
 	            },
@@ -84,35 +82,7 @@ class MathEditor {
         this.dom.matheqs[id] = matheq;
         this.mathfields[id] = mathfield;
         mathfield.focus();
-
-        // this.addTextModeArea(matheq, mathfield);
         return true;
-    }
-
-
-
-    handleKeydown(event, matheq, mathfield) {
-        if (window.needFocusUpDown && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
-            window.needFocusUpDown = false;
-            this.moveFocusUpDown(event, matheq);
-        } else if (this.states[this.focusId].isEmpty && event.key === 'Backspace' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey){
-            this.deleteFocus();
-        } else if(event.key==='"'){
-            alert("text mode")
-        }
-    }
-
-    deleteFocus(){
-    	const deleteId = this.focusId;
-    	const previosMatheq = this.dom.matheqs[deleteId]?.previousSibling;
-    	if(!previosMatheq) return;
-    	this.dom.matheqs[deleteId].remove();
-    	const previosId = previosMatheq.id;
-    	this.mathfields[previosId].focus();
-        this.focusId = previosId;
-        delete this.dom.matheqs[deleteId];
-        delete this.states[deleteId];
-        delete this.mathfields[deleteId];
     }
 
     addTextModeArea(matheq, mathfield){
@@ -132,6 +102,34 @@ class MathEditor {
 
         mathfield.blur();
         textArea.focus();
+    }
+
+
+    handleKeydown(event, matheq, mathfield) {
+        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+            setTimeout(function(){
+                if(!window.needFocusUpDown) return;
+                window.needFocusUpDown = false;
+                this.moveFocusUpDown(event, matheq);
+            }.bind(this), 0);
+        } else if (this.states[this.focusId].isEmpty && event.key === 'Backspace' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey){
+            this.deleteFocus();
+        } else if(event.key==='"'){
+            this.addTextModeArea(matheq, mathfield);
+        }
+    }
+
+    deleteFocus(){
+    	const deleteId = this.focusId;
+    	const previosMatheq = this.dom.matheqs[deleteId]?.previousSibling;
+    	if(!previosMatheq) return;
+    	this.dom.matheqs[deleteId].remove();
+    	const previosId = previosMatheq.id;
+    	this.mathfields[previosId].focus();
+        this.focusId = previosId;
+        delete this.dom.matheqs[deleteId];
+        delete this.states[deleteId];
+        delete this.mathfields[deleteId];
     }
 
     handleTextKeydown(event, textArea) {

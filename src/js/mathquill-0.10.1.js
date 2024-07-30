@@ -1903,7 +1903,6 @@
 
         function moveUpDown(self, dir) {
             var cursor = self.notify('upDown').cursor;
-            const originalParent = cursor.parent; // In order to check cursor parent (custom by mao)
             var dirInto = dir + 'Into',
                 dirOutOf = dir + 'OutOf';
             if (cursor[R][dirInto]) cursor.insAtLeftEnd(cursor[R][dirInto]);
@@ -1912,14 +1911,15 @@
                 cursor.parent.bubble(function(ancestor) {
                     var prop = ancestor[dirOutOf];
                     if (prop) {
-                        if (typeof prop === 'function') prop = ancestor[dirOutOf](cursor);
+                        if (typeof prop === 'function'){
+                            prop = ancestor[dirOutOf](cursor);
+                            window.needFocusUpDown = true; // this means the focus should jump to next/previous equation (by mao)
+                        }
                         if (prop instanceof Node) cursor.jumpUpDown(ancestor, prop);
                         if (prop !== true) return false;
                     }
                 });
             }
-            if (cursor.parent === originalParent) window.needFocusUpDown = true; // In order to check cursor parent (custom by mao)
-
             return self;
         }
         this.onNotify(function(e) { if (e !== 'upDown') this.upDownCache = {}; });
@@ -1958,7 +1958,7 @@
             return this;
         };
         _.backspace = function() { return this.deleteDir(L); };
-        _.deleteForward = function() {return this.deleteDir(R);};
+        _.deleteForward = function() { return this.deleteDir(R); };
 
         this.onNotify(function(e) { if (e !== 'select') this.endSelection(); });
         _.selectDir = function(dir) {
@@ -2509,7 +2509,6 @@
             cursor.insAtDirEnd(-dir, updownInto || this.ends[-dir]);
         };
         _.deleteTowards = function(dir, cursor) {
-            console.log("we3oit wlkrn3 el;tn")
             if (this.isEmpty()) cursor[dir] = this.remove()[dir];
             else this.moveTowards(dir, cursor, null);
         };
