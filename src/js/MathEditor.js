@@ -3,6 +3,7 @@ class MathEditor {
 	    this.dom = {};
         this.dom.parent = config.parent || document.body;
         this.mathquill = MathQuill.getInterface(2);
+        this.id_prefix = this.config?.id_prefix || "eq";
         this._id_num = 1;
         this.focusId = null;
         this.mathfields = {};
@@ -16,7 +17,7 @@ class MathEditor {
 
     createId(id) {
         this._id_num += 1;
-        return `eq-${this._id_num - 1}`;
+        return `${this.id_prefix}-${this._id_num - 1}`;
     }
 
     initializeDom() {
@@ -33,10 +34,25 @@ class MathEditor {
 
         const state = {
         	id: id,
-        	latex: '',
             isEmpty: true,
+        	latex: '',
         };
 
+        const {matheq, mathfield} = this.addMathModeArea(id, state);
+
+        if (!this.dom.container.lastChild || !this.dom.matheqs[this.focusId] || !this.dom.matheqs[this.focusId].nextSibling) {
+            this.dom.container.appendChild(matheq); // the container is empty || focus matheq not found || focus matheq next is empty
+        } else if (this.dom.matheqs[this.focusId].nextSibling) {
+            this.dom.container.insertBefore(matheq, this.dom.matheqs[this.focusId].nextSibling); // focus matheq next is not empty
+        }
+
+        this.states[id] = state;
+        this.focusId = id;
+        mathfield.focus();
+        return true;
+    }
+
+    addMathModeArea(id, state){
         const matheq = this.createAndAppendElement(null, "div", {
             class: "mathnote-matheq",
             id: id
@@ -47,7 +63,8 @@ class MathEditor {
             autocapitalize: 'off',
             autocomplete: 'off',
             autocorrect: 'off',
-            spellcheck: 'false'
+            spellcheck: 'false',
+            id: `${id}-mathmode-textarea`,
         });
         mathTextArea.setAttribute('x-palm-disable-ste-all', 'true');
 
@@ -55,9 +72,9 @@ class MathEditor {
             substituteTextarea: function (){ return mathTextArea;},
             handlers: {
                 edit: function(e) {
-                	state.latex = mathfield.latex();
+                    state.latex = mathfield.latex();
                     state.isEmpty = state.latex==='';
-	            },
+                },
                 enter: function() {
                     this.createEquationDom();
                 }.bind(this),
@@ -65,87 +82,134 @@ class MathEditor {
         });
 
         mathTextArea.addEventListener('keydown', function(e) {
-            this.handleKeydown(e, matheq, mathfield);
+            this.handleMathKeydown(e, matheq, mathfield);
         }.bind(this), false);
 
         matheq.addEventListener("click", function(e) {
             this.focusId = id;
-        }.bind(this), false)
+        }.bind(this), false);
 
-        if (!this.dom.container.lastChild || !this.dom.matheqs[this.focusId] || !this.dom.matheqs[this.focusId].nextSibling) {
-            this.dom.container.appendChild(matheq); // the container is empty || focus matheq not found || focus matheq next is empty
-        } else if (this.dom.matheqs[this.focusId].nextSibling) {
-            this.dom.container.insertBefore(matheq, this.dom.matheqs[this.focusId].nextSibling); // focus matheq next is not empty
-        }
-        this.states[id] = state;
-        this.focusId = id;
         this.dom.matheqs[id] = matheq;
         this.mathfields[id] = mathfield;
-        mathfield.focus();
-        return true;
+
+        return {matheq, mathfield};
     }
 
     addTextModeArea(matheq, mathfield){
-        const textContainer = this.createAndAppendElement(matheq, "div", {
+        const id = matheq.id;
+        const state = this.states[id];
+        const newMatheq = this.createAndAppendElement(null, "div", {
+            class: "mathnote-matheq textmode",
+            id: id
+        });
+        matheq.replaceWith(newMatheq);
+
+        const textContainer = this.createAndAppendElement(newMatheq, "div", {
             class: "mathnote-text-container"
         });
 
         const textArea = this.createAndAppendElement(textContainer, "textarea", {
-            class: "mathnote-text-area"
+            class: "mathnote-text-textarea",
+            autocapitalize: 'off',
+            id: `${id}-textmode-textarea`,
+            rows: 1
         });
 
         textArea.addEventListener("keydown", function(e) {
-            this.handleTextKeydown(e, textArea);
+            this.handleTextKeydown(e, textArea, newMatheq);
         }.bind(this), false);
 
-        // matheq.querySelector(".mq-root-block").style.display = "";
+        textArea.addEventListener("focus", function(e) {
+            newMatheq.classList.add("focus");
+        }.bind(this), false);
+
+        textArea.addEventListener("blur", function(e) {
+            newMatheq.classList.remove("focus");
+        }.bind(this), false);
+
+        textArea.addEventListener("input", function() {
+            state.text = textArea.value;
+            state.isEmpty = state.text==='';
+            textArea.style.height = 'auto';
+            textArea.style.height = (textArea.scrollHeight) + 'px';
+        }.bind(this), false);
 
         mathfield.blur();
+        mathfield = null;
         textArea.focus();
+        setTimeout(function(){
+            textArea.value = "";
+            state.text = textArea.value;
+            state.isEmpty = true;
+        }, 0);
+        this.dom.matheqs[id] = newMatheq;
+        this.mathfields[id] = textArea;
+        delete state.latex;
     }
 
-
-    handleKeydown(event, matheq, mathfield) {
-        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+    handleMathKeydown(event, matheq, mathfield) {
+        const focusState = this.states[this.focusId];
+        if (event.key==='ArrowUp' || event.key==='ArrowDown') {
             setTimeout(function(){
                 if(!window.needFocusUpDown) return;
                 window.needFocusUpDown = false;
                 this.moveFocusUpDown(event, matheq);
             }.bind(this), 0);
-        } else if (this.states[this.focusId].isEmpty && event.key === 'Backspace' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey){
+        } else if (focusState.isEmpty && event.key==='Backspace' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey){
             this.deleteFocus();
-        } else if(event.key==='"'){
+        } else if(focusState.isEmpty && (event.ctrlKey || event.metaKey) && event.key==='/'){
             this.addTextModeArea(matheq, mathfield);
         }
     }
 
+    handleTextKeydown(event, textArea, textModeMatheq) {
+        const focusState = this.states[this.focusId];
+
+        if (event.key==='ArrowUp' || event.key==='ArrowDown') {
+            const cursorPosition = textArea.selectionStart;
+            const hasPreviousLine = cursorPosition > 0;
+            const hasNextLine = cursorPosition < textArea.value.length;
+            if (event.key === 'ArrowUp' && !hasPreviousLine) {
+                this.moveFocusUpDown(event, textModeMatheq);
+            } else if (event.key === 'ArrowDown' && !hasNextLine) {
+                this.moveFocusUpDown(event, textModeMatheq);
+            }
+        } else if (event.key==='Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+            event.preventDefault();
+            this.createEquationDom();
+        }  else if (focusState.isEmpty && event.key==='Backspace' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey){
+            this.deleteFocus();
+        } else if(focusState.isEmpty && (event.ctrlKey || event.metaKey) && event.key==='/') {
+            const id = this.focusId;
+            const state = this.states[id];
+            const {matheq, mathfield} = this.addMathModeArea(id, state);
+            textModeMatheq.replaceWith(matheq);
+            mathfield.focus();
+            delete state.text
+        }
+    }
+
     deleteFocus(){
-    	const deleteId = this.focusId;
-    	const previosMatheq = this.dom.matheqs[deleteId]?.previousSibling;
-    	if(!previosMatheq) return;
-    	this.dom.matheqs[deleteId].remove();
-    	const previosId = previosMatheq.id;
-    	this.mathfields[previosId].focus();
+        const deleteId = this.focusId;
+        const previosMatheq = this.dom.matheqs[deleteId]?.previousSibling;
+        if(!previosMatheq) return;
+        this.dom.matheqs[deleteId].remove();
+        const previosId = previosMatheq.id;
         this.focusId = previosId;
         delete this.dom.matheqs[deleteId];
         delete this.states[deleteId];
         delete this.mathfields[deleteId];
-    }
-
-    handleTextKeydown(event, textArea) {
-        if (event.key === 'Escape') {
-            // 切换回数学模式
-            const mathfield = this.createEquationDom();
-            textArea.parentElement.replaceWith(mathfield);
-        }
+        this.mathfields[previosId].focus();
+        // if previous is mathmode => mathfield is mathquill mathfield
+        // if previous is textmode => mathfield is textarea 
     }
 
     moveFocusUpDown(event, matheq) {
-        if (event.key === 'ArrowDown' && matheq.nextSibling) {
+        if (event.key==='ArrowDown' && matheq.nextSibling) {
         	const nextId = matheq.nextSibling.id;
         	this.mathfields[nextId]?.focus();
         	this.focusId = nextId;
-        } else if (event.key === 'ArrowUp' && matheq.previousSibling) {
+        } else if (event.key==='ArrowUp' && matheq.previousSibling) {
         	const previosId = matheq.previousSibling.id;
         	this.mathfields[previosId]?.focus();
         	this.focusId = previosId;
