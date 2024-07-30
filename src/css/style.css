@@ -1,0 +1,46 @@
+* {
+    box-sizing: border-box;
+    position: relative;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+}
+
+/* --- */
+.freemath-container {
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.freemath-canvas {
+    display: block;
+    overflow: hidden;
+    cursor: grab;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.freemath-note-container {
+    position: absolute;
+    overflow: visible;
+    width: 0;
+    height: 0;
+    top: 0;
+    left: 0;
+}
+
+.note {
+    white-space: nowrap;
+    background-color: yellow;
+    padding: 5px;
+    border: 1px solid black;
+    border-radius: 4px;
+    cursor: move;
+    wra
+}

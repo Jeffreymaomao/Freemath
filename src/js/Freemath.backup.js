@@ -1,34 +1,8 @@
-window.addEventListener("load", (e)=>{
-	// Array.from(document.querySelectorAll("section")).forEach(section=>{
-	// 	// const mathEditor = new MathEditor({
-	// 	// 	parent: section
-	// 	// });
-	// });
-
-	const app = new Freemath({});
-	for(let i=0;i<200;i++){
-		app.addNote(
-			window.innerWidth*2.0*Math.random(),
-			window.innerHeight*2.0*Math.random(),
-		'這是一個筆記');
-	}
-	window.app = app
-});
-
-////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////
-
 class Freemath {
     constructor(config = {}) {
         this.dom = {};
         this.notes = {};
-        this.translate = {x:0,y:0};
-        this.background = {
-        	type: 'grid', // 'dot' or 'grid'
-        	size: 20,
-        	lineStyle: '#aaa',
-        	lineWidth: 0.5
-        };
+        this.origin = {x:0,y:0};
         this.dom.parent = config.parent || document.body;
         this.initializeDom();
     }
@@ -39,51 +13,73 @@ class Freemath {
         });
 
         this.dom.canvas = this.createAndAppendElement(this.dom.container, 'div', {
-            class: 'freemath-canvas',
-            style: 'background-position: 0 0'
-        });
-
-        this.dom.noteContainer = this.createAndAppendElement(this.dom.container, 'div', {
-            class: 'freemath-note-container'
+            class: 'freemath-canvas'
         });
 
         this.dom.notes = {};
-        this.changeBackground();
+
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        const initialWidth = windowWidth * 2;
+        const initialHeight = windowHeight * 2;
+
+        this.dom.canvas.style.width = `${initialWidth}px`;
+        this.dom.canvas.style.height = `${initialHeight}px`;
+        this.dom.container.scrollLeft = (initialWidth - windowWidth)/2;
+        this.dom.container.scrollTop = (initialHeight - windowHeight)/2;
         this.initScrollEvents();
-    }
-
-    changeBackground() {
-    	const canvas = this.dom.canvas;
-    	const config = this.background;
-    	config.type = config.type || 'dot';
-    	config.lineStyle = config.lineStyle || '#ccc';
-    	config.lineWidth = config.lineWidth || 1;
-    	config.size = config.size || 20;
-
-
-    	canvas.style.background = 'white';
-	    if(config.type==='dot'){
-	    	canvas.style.backgroundImage = `radial-gradient(${config.lineStyle} ${config.lineWidth}px, transparent 0)`;
-	    } else if (config.type==='grid'){
-	    	canvas.style.backgroundImage = `linear-gradient(to right, ${config.lineStyle} ${config.lineWidth}px, transparent ${config.lineWidth}px), linear-gradient(to bottom, ${config.lineStyle} ${config.lineWidth}px, transparent ${config.lineWidth}px)`;
-	    }
-	    canvas.style.backgroundSize = `${config.size}px ${config.size}px`;
     }
 
     initScrollEvents() {
         this.dom.container.addEventListener('wheel', function(e){
             e.preventDefault();
-            this.translate.x -= e.deltaX;
-            this.translate.y -= e.deltaY;
-            this.dom.noteContainer.style.transform = `translate(${this.translate.x}px, ${this.translate.y}px)`;
-            this.dom.canvas.style.backgroundPosition = `${this.translate.x}px ${this.translate.y}px`;
+            this.dom.container.scrollLeft += e.deltaX;
+            this.dom.container.scrollTop += e.deltaY;
+            this.expandCanvas(e.deltaX, e.deltaY);
         }.bind(this), false);
+    }
+
+    expandCanvas(deltaX, deltaY) {
+        const scrollLeft = this.dom.container.scrollLeft;
+        const scrollTop = this.dom.container.scrollTop;
+        const clientWidth = this.dom.container.clientWidth;
+        const clientHeight = this.dom.container.clientHeight;
+        const canvasWidth = this.dom.canvas.offsetWidth;
+        const canvasHeight = this.dom.canvas.offsetHeight;
+
+        // delta > 0 && the canvas is not enouh
+        if (deltaX > 0 && scrollLeft + clientWidth >= canvasWidth) {
+            this.dom.canvas.style.width = `${canvasWidth + Math.abs(deltaX)}px`;
+        }
+        if (deltaY > 0 && scrollTop + clientHeight >= canvasHeight) {
+            this.dom.canvas.style.height = `${canvasHeight + Math.abs(deltaY)}px`;
+        }
+
+        // delta < 0 && the canvas is not enouh
+        if (deltaX < 0 && scrollLeft <= 0) {
+            this.dom.canvas.style.width = `${canvasWidth + Math.abs(deltaX)}px`;
+
+        	this.origin.x += deltaX;
+            this.reDrawNote();
+        }
+        if (deltaY < 0 && scrollLeft <= 0) {
+        	this.dom.canvas.style.height = `${canvasHeight + Math.abs(deltaY)}px`;
+
+        	this.origin.y += deltaY;
+        	this.reDrawNote()
+        }
+    }
+
+    reDrawNote(){
+    	Object.values(this.dom.notes).forEach(note=>{
+
+    	})
     }
 
 
     addNote(x, y, text) {
     	const id = this.hash(`${text}-${x}-${y}-${Date.now()}`.padStart(50,'0')).slice(0,10)
-        const note = this.createAndAppendElement(this.dom.noteContainer, 'div', {
+        const note = this.createAndAppendElement(this.dom.canvas, 'div', {
             class: 'note',
             id: id,
             style: `position: absolute; top: ${y}px; left: ${x}px;`,

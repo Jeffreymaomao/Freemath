@@ -1,15 +1,27 @@
 class MathEditor {
     constructor(config = {}) {
+        this.id = this.hash(Date.now().toString());
 	    this.dom = {};
         this.dom.parent = config.parent || document.body;
         this.mathquill = MathQuill.getInterface(2);
-        this.id_prefix = this.config?.id_prefix || "eq";
+        this.createTime = this.getTime();
+        this.id_prefix = this.config?.id_prefix || this.id;
         this._id_num = 1;
         this.focusId = null;
         this.mathfields = {};
         this.downkeys = {};
         this.states = {};
 
+        if(!window.MathEditors){
+            window.MathEditors = [];
+        } else{
+            window.MathEditors.forEach(matheditor=>{
+                Object.values(matheditor.mathfields).forEach((mathfield)=>{
+                    mathfield.blur();
+                });
+            });
+        }
+        window.MathEditors.push(this);
         window.needFocusUpDown = false;
 
         this.initializeDom();
@@ -22,7 +34,8 @@ class MathEditor {
 
     initializeDom() {
         this.dom.container = this.createAndAppendElement(this.dom.parent, "div", {
-            class: "mathnote-container"
+            class: "mathnote-container",
+            id: this.id
         });
 
         this.dom.matheqs = {};
@@ -214,6 +227,37 @@ class MathEditor {
         	this.mathfields[previosId]?.focus();
         	this.focusId = previosId;
         }
+    }
+
+    getTime() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const milliseconds = String(now.getMilliseconds()).padStart(2, '0');
+        
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}:${milliseconds}`;
+    }
+
+    hash(str){
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = (hash << 5) - hash + char;
+            hash |= 0; // Convert to 32-bit integer
+        }
+        hash = Math.abs(hash);
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        let result = '';
+        while (hash > 0) {
+            const shift = Math.floor(Math.random() * 100);
+            result = chars[(hash+shift) % 26] + result;
+            hash = Math.floor(hash / 26);
+        }
+        return result;
     }
 
     createAndAppendElement(parent, tag, attributes = {}) {
