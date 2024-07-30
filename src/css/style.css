@@ -36,8 +36,8 @@ body {
 }
 
 .note {
+    position: absolute;
     white-space: nowrap;
-    background-color: yellow;
     padding: 5px;
     border: 1px solid black;
     border-radius: 4px;

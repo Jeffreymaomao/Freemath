@@ -6,12 +6,6 @@ window.addEventListener("load", (e)=>{
 	// });
 
 	const app = new Freemath({});
-	for(let i=0;i<200;i++){
-		app.addNote(
-			window.innerWidth*2.0*Math.random(),
-			window.innerHeight*2.0*Math.random(),
-		'這是一個筆記');
-	}
 	window.app = app
 });
 
@@ -49,7 +43,22 @@ class Freemath {
 
         this.dom.notes = {};
         this.changeBackground();
-        this.initScrollEvents();
+
+        this.dom.container.addEventListener('wheel', this.containerWheelEvents.bind(this), false);
+        this.dom.container.addEventListener('dblclick', this.containerDoubleClickEvents.bind(this), false);
+    }
+
+    containerWheelEvents(e) {
+        e.preventDefault();
+        this.translate.x -= e.deltaX;
+        this.translate.y -= e.deltaY;
+        this.dom.noteContainer.style.transform = `translate(${this.translate.x}px, ${this.translate.y}px)`;
+        this.dom.canvas.style.backgroundPosition = `${this.translate.x}px ${this.translate.y}px`;
+    }
+
+    containerDoubleClickEvents(e) {
+        e.preventDefault();
+        app.addNote(e.clientX - this.translate.x, e.clientY - this.translate.y);
     }
 
     changeBackground() {
@@ -70,25 +79,27 @@ class Freemath {
 	    canvas.style.backgroundSize = `${config.size}px ${config.size}px`;
     }
 
-    initScrollEvents() {
-        this.dom.container.addEventListener('wheel', function(e){
-            e.preventDefault();
-            this.translate.x -= e.deltaX;
-            this.translate.y -= e.deltaY;
-            this.dom.noteContainer.style.transform = `translate(${this.translate.x}px, ${this.translate.y}px)`;
-            this.dom.canvas.style.backgroundPosition = `${this.translate.x}px ${this.translate.y}px`;
-        }.bind(this), false);
-    }
-
-
     addNote(x, y, text) {
+    	text = text || 'This is some text.'
     	const id = this.hash(`${text}-${x}-${y}-${Date.now()}`.padStart(50,'0')).slice(0,10)
-        const note = this.createAndAppendElement(this.dom.noteContainer, 'div', {
+        // ---
+        // const note = this.createAndAppendElement(this.dom.noteContainer, 'div', {
+        //     class: 'note',
+        //     id: id,
+        //     style: `position: absolute; top: ${y}px; left: ${x}px; background-color: yellow;`,
+        //     textContent: text
+        // });
+		// ---
+		const note = this.createAndAppendElement(this.dom.noteContainer, 'div', {
             class: 'note',
             id: id,
-            style: `position: absolute; top: ${y}px; left: ${x}px;`,
-            textContent: text
+            style: `absolute; top: ${y}px; left: ${x}px; width: 300px; background-color: white;`
         });
+       	const mathEditor = new MathEditor({
+			parent: note
+		});
+		// ---
+
         this.dom.notes[id] = note;
     }
 
