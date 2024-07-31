@@ -1,34 +1,14 @@
 window.addEventListener("load", (e)=>{
 	const app = new Freemath({});
 
+    // const xr = ()=>{return Math.random()*window.innerWidth}
+    // const yr = ()=>{return Math.random()*window.innerHeight}
+    // for(let i=0;i<1;i++){
+    //     const x1 = xr(), y1 = yr();
+    //     app.addNote(x1, y1);
+    // }
 
-    // const x1 = 100, y1 = 100;
-    // const x2 = 400, y2 = 400;
-
-    // app.addNote(x1, y1);
-    // app.addNote(x2, y2);
-
-    // const cx1 = x1 + (x2 - x1) / 3;
-    // const cy1 = y1;
-    // const cx2 = x2 - (x2 - x1) / 3;
-    // const cy2 = y2;
-    // app.drawBezierCurve(x1, y1, x2, y2, cx1, cy1, cx2, cy2);
-
-    const xr = ()=>{return (2*Math.random()-0.5)*window.innerWidth}
-    const yr = ()=>{return (2*Math.random()-0.5)*window.innerHeight}
-    for(let i=0;i<0;i++){
-        const x1 = xr(), y1 = yr();
-        const x2 = xr(), y2 = yr();
-
-        app.addNote(x1, y1);
-        app.addNote(x2, y2);
-
-        const cx1 = x1 + (x2 - x1) / 3;
-        const cy1 = y1;
-        const cx2 = x2 - (x2 - x1) / 3;
-        const cy2 = y2;
-        app.drawBezierCurve(x1, y1, x2, y2, cx1, cy1, cx2, cy2);
-    }
+    app.addNote(window.innerWidth*0.5, window.innerHeight*0.5);
 
 	window.app = app
 });
@@ -49,6 +29,7 @@ class Freemath {
         this.dom.parent = config.parent || document.body;
         this.mouseClickStart = {x:0,y:0};
         this.currentDraggingNote = null;
+        this.focusNote = null;
         this.drawingPath = false;
         this.pathStart = {x:0,y:0,id:null};
         this.initializeDom();
@@ -75,9 +56,10 @@ class Freemath {
         this.changeBackground();
         this.initializeSVGLayer();
 
-        this.dom.container.addEventListener('wheel', this.containerWheelEvents.bind(this), false);
+        this.dom.container.addEventListener('wheel', this.containerWheelEvents.bind(this), { passive: true });
         this.dom.container.addEventListener('dblclick', this.containerDoubleClickEvent.bind(this), false);
         this.dom.container.addEventListener('mousedown', this.containerMouseDownEvent.bind(this), false);
+        document.addEventListener('keydown', this.containerKeyDownEvent.bind(this), false);
         document.addEventListener('mousemove', this.containerMouseMoveEvent.bind(this), false);
         document.addEventListener('mouseup', this.containerMouseUpEvent.bind(this), false);
     }
@@ -94,7 +76,7 @@ class Freemath {
 
     containerWheelEvents(e) {
         if(e.ctrlKey) return;
-        e.preventDefault();
+        // e.preventDefault();
         this.translate.x -= e.deltaX;
         this.translate.y -= e.deltaY;
         const rect = this.dom.container.getBoundingClientRect();
@@ -103,7 +85,6 @@ class Freemath {
             this.dom.noteContainer.style.transform = `translate(${this.translate.x}px, ${this.translate.y}px)`;
             this.dom.canvas.style.backgroundPosition = `${center.x + this.translate.x}px ${center.y + this.translate.y}px`;
         }.bind(this));
-        
     }
 
     containerDoubleClickEvent(e) {
@@ -112,7 +93,13 @@ class Freemath {
     }
 
     containerMouseDownEvent(e){
-        if(!e.target.classList.contains('note')) return;
+        Object.values(this.dom.notes).forEach(note=>{note.classList.remove('focus');})
+        if(!e.target.classList.contains('note')){
+            this.focusNote = null;
+            return;
+        }
+        this.focusNote = e.target;
+        this.focusNote.classList.add("focus");
 
         if(e.shiftKey && !this.drawingPath && !this.dom.drawingPath){
             // start to draw path
@@ -185,6 +172,18 @@ class Freemath {
         this.drawingPath = false;
     }
 
+    containerKeyDownEvent(e){
+        if(this.focusNote && e.key==='Backspace'){
+            const confirmed = window.confirm("Are you sure to delete this note?");
+            if(!confirmed) return;
+            const deleteId = this.focusNote.id;
+            this.focusNote.remove();
+            Object.keys(this.dom.paths).forEach(pathId=>{
+                if(!pathId.includes(deleteId)) return; 
+                this.dom.paths[pathId].dom.remove();
+            })
+        }
+    }
 
     createBezierCurve(start, end) {
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -219,27 +218,19 @@ class Freemath {
         return null;
     }
 
-    addNote(x, y, text) {
-    	text = text || 'This is some text.'
-    	const id = this.hash(`${text}-${x}-${y}-${Date.now()}`.padStart(50,'0')).slice(0,10)
-        // ---
-        // const note = this.createAndAppendElement(this.dom.noteContainer, 'div', {
-        //     class: 'note',
-        //     id: id,
-        //     style: `position: absolute; top: ${y}px; left: ${x}px; background-color: yellow;`,
-        //     textContent: text
-        // });
+    addNote(x, y) {
+    	const id = this.hash(`${x}-${y}-${Date.now()}`.padStart(50,'0')).slice(0,10)
 		// ---
 		const note = this.createAndAppendElement(this.dom.noteContainer, 'div', {
             class: 'note',
             id: id,
-            style: `absolute; top: ${y}px; left: ${x}px; width: 300px; background-color: white;`
+            draggable: false,
+            style: `display: block; absolute; top: ${y}px; left: ${x}px; min-width: 300px;`
         });
        	const mathEditor = new MathEditor({
 			parent: note
 		});
 		// ---
-
         this.dom.notes[id] = note;
     }
 

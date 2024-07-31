@@ -12,6 +12,8 @@ class MathEditor {
         this.downkeys = {};
         this.states = {};
 
+        // https://stackoverflow.com/questions/14747537/implementin-undo-redo-in-math-editor
+
         if(!window.MathEditors){
             window.MathEditors = [];
         } else{
