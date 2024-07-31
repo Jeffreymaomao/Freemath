@@ -28,14 +28,12 @@
 }
 
 .mathnote-matheq {
-    padding: 5px;
     border-color: gray;
     border-style: solid;
     border-width: 0.5px 1px;
 }
 
 .mathnote-matheq.textmode textarea.mathnote-text-textarea {
-    padding: 8.0px 10px;
     border-width: 1px;
     width: 100%;
     overflow: hidden;
@@ -45,6 +43,7 @@
                  'Times New Roman', 'Times', serif;  
     font-size: 1.15em;
     border: none;
+    white-space: nowrap;
 }
 
 .mathnote-matheq.textmode .mathnote-text-textarea:focus{
@@ -69,9 +68,33 @@
     border-color: #d26a93;
 }
 
+.mathnote-matheq {
+    padding: 0px;
+}
+
 .mq-math-mode .mq-root-block {
-    padding: 10px;
+    padding: 15px;
     overflow-x: scroll;
+}
+
+.mathnote-matheq.textmode textarea.mathnote-text-textarea {
+    padding: 14px 15px;
+}
+
+/* --- */
+/* \sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ } */
+
+.mathnote-matheq {
+    padding-right: 35px;
+}
+
+.mathnote-label {
+    position: absolute;
+    padding-right: 2px;
+    right: 0;
+    top: 50%;
+    transform: translate(0, -50%);
+    text-align: middle;
 }
 
 /* --- */

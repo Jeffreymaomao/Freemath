@@ -11,6 +11,7 @@ class MathEditor {
         this.mathfields = {};
         this.downkeys = {};
         this.states = {};
+        this.isComposing = false;
 
         // https://stackoverflow.com/questions/14747537/implementin-undo-redo-in-math-editor
 
@@ -41,6 +42,7 @@ class MathEditor {
         });
 
         this.dom.matheqs = {};
+        this.dom.labels = {};
         this.createEquationDom();
     }
 
@@ -61,10 +63,41 @@ class MathEditor {
             this.dom.container.insertBefore(matheq, this.dom.matheqs[this.focusId].nextSibling); // focus matheq next is not empty
         }
 
+        this.orderLabelNum();
+
         this.states[id] = state;
         this.focusId = id;
         mathfield.focus();
         return true;
+    }
+
+    createLabelDom(id){
+        const labelId = `${id}-label-num`;
+        const label = this.createAndAppendElement(null, 'div', {
+            class: 'mathnote-label'
+        });
+        const labelLeaf = this.createAndAppendElement(label, 'span',{
+            class: 'mq-non-leaf'
+        });
+        const labelLeftBrace = this.createAndAppendElement(labelLeaf, 'span',{
+            class: 'mq-scaled mq-paren',
+            style: 'transform: scale(0.999983, 1.1999)',
+            textContent: '('
+        });
+
+        const labelNum = this.createAndAppendElement(labelLeaf, 'span',{
+            class: 'mq-non-leaf matheq-label-num',
+            id: labelId,
+            textContent: '0'
+        });
+
+        const labelRightBrace = this.createAndAppendElement(labelLeaf, 'span',{
+            class: 'mq-scaled mq-paren',
+            style: 'transform: scale(0.999983, 1.1999)',
+            textContent: ')'
+        });
+        this.dom.labels[labelId] = label.querySelector(`#${labelId}`);
+        return label;
     }
 
     addMathModeArea(id, state){
@@ -73,8 +106,10 @@ class MathEditor {
             id: id
         });
 
-        const mathTextArea = this.createAndAppendElement(null, "textarea", {
-            class: "mathnote-math-textarea",
+        const label = this.createLabelDom(id);
+
+        const mathTextArea = this.createAndAppendElement(null, 'textarea', {
+            class: 'mathnote-math-textarea',
             autocapitalize: 'off',
             autocomplete: 'off',
             autocorrect: 'off',
@@ -96,10 +131,10 @@ class MathEditor {
             }
         });
 
+        matheq.appendChild(label);
         mathTextArea.addEventListener('keydown', function(e) {
             this.handleMathKeydown(e, matheq, mathfield);
         }.bind(this), false);
-
         matheq.addEventListener("click", function(e) {
             this.focusId = id;
         }.bind(this), false);
@@ -108,6 +143,14 @@ class MathEditor {
         this.mathfields[id] = mathfield;
 
         return {matheq, mathfield};
+    }
+
+    orderLabelNum(){
+        requestAnimationFrame(function(){
+            Array.from(this.dom.container.querySelectorAll(".matheq-label-num")).forEach((numLabel,index)=>{
+                numLabel.textContent = `${index+1}`;
+            });
+        }.bind(this));
     }
 
     addTextModeArea(matheq, mathfield){
@@ -142,11 +185,21 @@ class MathEditor {
             newMatheq.classList.remove("focus");
         }.bind(this), false);
 
+        textArea.addEventListener('compositionstart', function() {
+            this.isComposing = true;
+        }.bind(this), false);
+
+        textArea.addEventListener('compositionend', function() {
+            this.isComposing = false;
+        }.bind(this), false);
+
         textArea.addEventListener("input", function() {
             state.text = textArea.value;
             state.isEmpty = state.text==='';
             textArea.style.height = 'auto';
             textArea.style.height = (textArea.scrollHeight) + 'px';
+            textArea.style.width = 'auto';
+            textArea.style.width = (textArea.scrollWidth) + 'px'
         }.bind(this), false);
 
         mathfield.blur();
@@ -179,6 +232,7 @@ class MathEditor {
 
     handleTextKeydown(event, textArea, textModeMatheq) {
         const focusState = this.states[this.focusId];
+        if(this.isComposing) return;
 
         if (event.key==='ArrowUp' || event.key==='ArrowDown') {
             const cursorPosition = textArea.selectionStart;
@@ -199,6 +253,7 @@ class MathEditor {
             const state = this.states[id];
             const {matheq, mathfield} = this.addMathModeArea(id, state);
             textModeMatheq.replaceWith(matheq);
+            this.orderLabelNum();
             mathfield.focus();
             delete state.text
         }
