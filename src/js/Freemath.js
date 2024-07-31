@@ -10,6 +10,7 @@ class Freemath {
         	lineStyle: '#aaa',
         	lineWidth: 1
         };
+        this.createTime = this.getTime();
         this.dom.parent = config.parent || document.body;
         this.mouseClickStart = {x:0,y:0};
         this.currentDraggingNote = null;
@@ -166,7 +167,27 @@ class Freemath {
                 if(!pathId.includes(deleteId)) return; 
                 this.dom.paths[pathId].dom.remove();
             })
+        } else if(e.metaKey || e.ctrlKey){
+            if(e.key==='e'){ // export
+                this.exportState();
+            }
         }
+    }
+
+    exportState(){
+        if(!window.MathEditors) return;
+        const states = {};
+        window.MathEditors.forEach(matheditor=>{
+            states[matheditor.id] = matheditor.states;
+        });
+        const filename = `freemath-${this.createTime}.json`
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(states,null,4));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href",     dataStr);
+        downloadAnchorNode.setAttribute("download", filename);
+        document.body.appendChild(downloadAnchorNode); // required for firefox
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove()
     }
 
     createBezierCurve(start, end) {
@@ -233,6 +254,19 @@ class Freemath {
         }
         canvas.style.backgroundPosition = `${center.x + this.translate.x}px ${center.y + this.translate.y}px`;
         canvas.style.backgroundSize = `${config.size}px ${config.size}px`;
+    }
+
+    getTime() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const milliseconds = String(now.getMilliseconds()).padStart(2, '0');
+        
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}:${milliseconds}`;
     }
 
     hash(str){
