@@ -20,17 +20,20 @@ body {
 .freemath-canvas {
     display: block;
     overflow: hidden;
-    cursor: grab;
     width: 100%;
     height: 100%;
     overflow: hidden;
+/*    cursor: grab;*/
+}
+
+.freemath-path-container {
 }
 
 .freemath-note-container {
     position: absolute;
     overflow: visible;
-    width: 0;
-    height: 0;
+    width: 100%;
+    height: 100%;
     top: 0;
     left: 0;
 }
@@ -42,5 +45,5 @@ body {
     border: 1px solid black;
     border-radius: 4px;
     cursor: move;
-    wra
+    transform: translate(-50%, -50%);
 }
