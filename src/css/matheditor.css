@@ -11,8 +11,7 @@
     font-family: 'BiauKai';
     src: local('標楷體'),
          url('./font/edukai-5.0.woff') format('woff'),
-         url('./font/edukai-5.0.woff2') format('woff2'),
-         url('./font/edukai-5.0.tff') format('truetype');
+         url('./font/edukai-5.0.woff2') format('woff2');
     unicode-range: U+4E00-9FFF;
 }
 
@@ -82,7 +81,6 @@
 }
 
 /* --- */
-/* \sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ }\sum _{ }^{ } */
 
 .mathnote-matheq {
     padding-right: 35px;

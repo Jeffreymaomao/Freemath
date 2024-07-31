@@ -337,3 +337,5 @@ class MathEditor {
         return element;
     }
 }
+
+export default MathEditor;
