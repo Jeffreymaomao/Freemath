@@ -10,32 +10,16 @@ body {
 
 /* --- */
 .freemath-container {
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
 }
 
 .freemath-canvas {
-    display: block;
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-/*    cursor: grab;*/
 }
 
 .freemath-path-container {
 }
 
 .freemath-note-container {
-    position: absolute;
-    overflow: visible;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
+
 }
 
 .note {
