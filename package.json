@@ -1,0 +1,11 @@
+{
+  "name": "freemath",
+  "version": "1.0.0",
+  "description": "This web app is aim for math note with infinite map.",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Chang-Mao, Yang",
+  "license": "MIT"
+}
