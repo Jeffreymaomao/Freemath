@@ -2,17 +2,33 @@ window.addEventListener("load", (e)=>{
 	const app = new Freemath({});
 
 
-    const x1 = 100, y1 = 100;
-    const x2 = 400, y2 = 400;
+    // const x1 = 100, y1 = 100;
+    // const x2 = 400, y2 = 400;
 
-    app.addNote(x1, y1);
-    app.addNote(x2, y2);
+    // app.addNote(x1, y1);
+    // app.addNote(x2, y2);
 
-    const cx1 = x1 + (x2 - x1) / 3;
-    const cy1 = y1;
-    const cx2 = x2 - (x2 - x1) / 3;
-    const cy2 = y2;
-    app.drawBezierCurve(x1, y1, x2, y2, cx1, cy1, cx2, cy2);
+    // const cx1 = x1 + (x2 - x1) / 3;
+    // const cy1 = y1;
+    // const cx2 = x2 - (x2 - x1) / 3;
+    // const cy2 = y2;
+    // app.drawBezierCurve(x1, y1, x2, y2, cx1, cy1, cx2, cy2);
+
+    const xr = ()=>{return (2*Math.random()-0.5)*window.innerWidth}
+    const yr = ()=>{return (2*Math.random()-0.5)*window.innerHeight}
+    for(let i=0;i<0;i++){
+        const x1 = xr(), y1 = yr();
+        const x2 = xr(), y2 = yr();
+
+        app.addNote(x1, y1);
+        app.addNote(x2, y2);
+
+        const cx1 = x1 + (x2 - x1) / 3;
+        const cy1 = y1;
+        const cx2 = x2 - (x2 - x1) / 3;
+        const cy2 = y2;
+        app.drawBezierCurve(x1, y1, x2, y2, cx1, cy1, cx2, cy2);
+    }
 
 	window.app = app
 });
@@ -24,111 +40,204 @@ class Freemath {
     constructor(config = {}) {
         this.dom = {};
         this.translate = {x:0,y:0};
-        this.scale = 1;
         this.background = {
-        	type: 'grid', // 'dot' or 'grid'
+        	type: 'dot', // 'dot' / 'grid' / 'none'
         	size: 20,
         	lineStyle: '#aaa',
-        	lineWidth: 0.5
+        	lineWidth: 1
         };
-        this.initialPinchDistance = 0;
-        this.isPinching = false;
         this.dom.parent = config.parent || document.body;
+        this.mouseClickStart = {x:0,y:0};
+        this.currentDraggingNote = null;
+        this.drawingPath = false;
+        this.pathStart = {x:0,y:0,id:null};
         this.initializeDom();
     }
 
     initializeDom() {
     	this.dom.container = this.createAndAppendElement(this.dom.parent, 'div', {
-            class: 'freemath-container'
+            class: 'freemath-container',
+            style: 'display: block; position: fixed; top: 0; left: 0; overflow: hidden; width: 100vw; height: 100vh;'
         });
 
         this.dom.canvas = this.createAndAppendElement(this.dom.container, 'div', {
             class: 'freemath-canvas',
-            style: 'background-position: 0 0'
+            style: 'display: block; position: fixed;  overflow: hidden; width: 100%; height: 100%;'
         });
 
         this.dom.noteContainer = this.createAndAppendElement(this.dom.container, 'div', {
-            class: 'freemath-note-container'
+            class: 'freemath-note-container',
+            style: 'display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%;'
         });
 
         this.dom.notes = {};
+        this.dom.paths = {};
         this.changeBackground();
         this.initializeSVGLayer();
 
         this.dom.container.addEventListener('wheel', this.containerWheelEvents.bind(this), false);
-        this.dom.container.addEventListener('dblclick', this.containerDoubleClickEvents.bind(this), false);
+        this.dom.container.addEventListener('dblclick', this.containerDoubleClickEvent.bind(this), false);
+        this.dom.container.addEventListener('mousedown', this.containerMouseDownEvent.bind(this), false);
+        document.addEventListener('mousemove', this.containerMouseMoveEvent.bind(this), false);
+        document.addEventListener('mouseup', this.containerMouseUpEvent.bind(this), false);
     }
 
     initializeSVGLayer(){
         const pathContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         pathContainer.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        pathContainer.setAttribute('overflow', 'visible');
         pathContainer.style = 'display: block; width: 100%; height: 100%; position: absolute; left: 0; top: 0;';
         this.dom.pathContainer = pathContainer;
         this.dom.canvas.appendChild(pathContainer);
+        this.dom.noteContainer.appendChild(pathContainer);
     }
 
     containerWheelEvents(e) {
-        e.preventDefault();
-        if(e.ctrlKey){
-            this.scale *= 1.0 + (e.deltaY * -0.01);
-            console.log(this.scale)
-        } else {
-            this.translate.x -= e.deltaX;
-            this.translate.y -= e.deltaY;   
-        }
-
-        const transformCSS = `translate(${this.translate.x}px, ${this.translate.y}px) scale(${this.scale})`;
-        this.dom.pathContainer.style.transform = transformCSS;
-        this.dom.noteContainer.style.transform = transformCSS;
-        this.dom.canvas.style.backgroundPosition = `${this.translate.x}px ${this.translate.y}px`;
-    }
-
-    _containerWheelEvents(e) {
-        if(e.ctrlKey) return; // when the user pinch => (e.ctrlKey = true)
-        
+        if(e.ctrlKey) return;
         e.preventDefault();
         this.translate.x -= e.deltaX;
         this.translate.y -= e.deltaY;
-
-        const transformCSS = `translate(${this.translate.x}px, ${this.translate.y}px)`
-        this.dom.pathContainer.style.transform = transformCSS;
-        this.dom.noteContainer.style.transform = transformCSS;
-        this.dom.canvas.style.backgroundPosition = `${this.translate.x}px ${this.translate.y}px`;
+        const rect = this.dom.container.getBoundingClientRect();
+        const center = {x: rect.width*0.5, y: rect.height*0.5};
+        requestAnimationFrame(function(){
+            this.dom.noteContainer.style.transform = `translate(${this.translate.x}px, ${this.translate.y}px)`;
+            this.dom.canvas.style.backgroundPosition = `${center.x + this.translate.x}px ${center.y + this.translate.y}px`;
+        }.bind(this));
+        
     }
 
-    containerDoubleClickEvents(e) {
+    containerDoubleClickEvent(e) {
         e.preventDefault();
         app.addNote(e.clientX - this.translate.x, e.clientY - this.translate.y);
     }
 
-    drawBezierCurve(x1, y1, x2, y2, cx1, cy1, cx2, cy2) {
+    containerMouseDownEvent(e){
+        if(!e.target.classList.contains('note')) return;
+
+        if(e.shiftKey && !this.drawingPath && !this.dom.drawingPath){
+            // start to draw path
+            this.drawingPath = true;
+            const noteRect = e.target.getBoundingClientRect();
+            const centerX = noteRect.left + (noteRect.width / 2) - this.translate.x;
+            const centerY = noteRect.top + (noteRect.height / 2) - this.translate.y;
+
+            this.pathStart = { x: centerX, y: centerY, id: e.target.id};
+            this.dom.drawingPath = this.createBezierCurve(this.pathStart, this.pathStart);
+        } else {
+            this.currentDraggingNote = e.target;
+            this.startX = e.clientX - e.target.offsetLeft;
+            this.startY = e.clientY - e.target.offsetTop;
+        }
+    }
+
+    containerMouseMoveEvent(e) {
+        if (!e.shiftKey && this.currentDraggingNote){
+            const containerRect = this.dom.noteContainer.getBoundingClientRect();
+            const newX = e.clientX - containerRect.left - this.startX + this.translate.x;
+            const newY = e.clientY - containerRect.top - this.startY + this.translate.y;
+            this.currentDraggingNote.style.left = `${newX}px`;
+            this.currentDraggingNote.style.top = `${newY}px`;
+            const draggingId = this.currentDraggingNote.id;
+            Object.keys(this.dom.paths).forEach((pathId)=>{
+                if(!pathId.includes(draggingId)) return;
+                const path = this.dom.paths[pathId];
+                const noteRect = this.currentDraggingNote.getBoundingClientRect();
+                const centerX = noteRect.left + (noteRect.width / 2) - this.translate.x;
+                const centerY = noteRect.top + (noteRect.height / 2) - this.translate.y;
+                if(draggingId===path.start.id){
+                    path.start.x = centerX;
+                    path.start.y = centerY;
+                }else if(draggingId===path.end.id){
+                    path.end.x = centerX;
+                    path.end.y = centerY;
+                }
+                this.setBezierCurvePath(path.dom, path.start, path.end);
+            });
+
+        } else if(e.shiftKey && this.drawingPath && this.dom.drawingPath){
+            const pathEnd = { x: e.clientX - this.translate.x, y: e.clientY - this.translate.y };
+            this.setBezierCurvePath(this.dom.drawingPath, this.pathStart, pathEnd);
+        }
+    }
+
+    containerMouseUpEvent(e) {
+        if (this.currentDraggingNote) {
+            this.currentDraggingNote = null;
+        } else if (this.drawingPath && this.dom.drawingPath) {
+            // end to draw path
+            this.dom.drawingPath.remove();
+            if(e.target.classList.contains('note')){
+                // add path
+                const noteRect = e.target.getBoundingClientRect();
+                const centerX = noteRect.left + (noteRect.width / 2) - this.translate.x;
+                const centerY = noteRect.top + (noteRect.height / 2) - this.translate.y;
+
+                const pathEnd = { x: centerX, y: centerY, id: e.target.id};
+                const id = `${this.pathStart.id}-${pathEnd.id}`
+                this.dom.paths[id] = {
+                    start: this.pathStart,
+                    end: pathEnd,
+                    dom: this.createBezierCurve(this.pathStart, pathEnd)
+                }
+            }
+        }
+        this.dom.drawingPath = null;
+        this.drawingPath = false;
+    }
+
+
+    createBezierCurve(start, end) {
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute('d', `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`);
         path.setAttribute('fill', 'none');
         path.setAttribute('stroke', '#000000');
         path.setAttribute('stroke-width', '1.75');
+        this.setBezierCurvePath(path, start, end);
         this.dom.pathContainer.appendChild(path);
+        return path;
+    }
+
+    setBezierCurvePath(path, start, end) {
+        const x1 = start.x,
+            y1 = start.y,
+            x2 = end.x,
+            y2 = end.y;
+        const cx1 = x1 + (x2 - x1) / 3,
+            cy1 = y1,
+            cx2 = x2 - (x2 - x1) / 3,
+            cy2 = y2;
+        path.setAttribute('d', `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`);
+    }
+
+    findParentWithSelector(element, cssSelector) {
+        if (!element) return null;
+        let currentElement = element;
+        while (currentElement) {
+            if (currentElement === document.body) return null;
+            if (currentElement.matches(cssSelector)) return currentElement;
+            currentElement = currentElement.parentElement;
+        }
+        return null;
     }
 
     addNote(x, y, text) {
     	text = text || 'This is some text.'
     	const id = this.hash(`${text}-${x}-${y}-${Date.now()}`.padStart(50,'0')).slice(0,10)
         // ---
-        const note = this.createAndAppendElement(this.dom.noteContainer, 'div', {
-            class: 'note',
-            id: id,
-            style: `position: absolute; top: ${y}px; left: ${x}px; background-color: yellow;`,
-            textContent: text
-        });
-		// ---
-		// const note = this.createAndAppendElement(this.dom.noteContainer, 'div', {
+        // const note = this.createAndAppendElement(this.dom.noteContainer, 'div', {
         //     class: 'note',
         //     id: id,
-        //     style: `absolute; top: ${y}px; left: ${x}px; width: 300px; background-color: white;`
+        //     style: `position: absolute; top: ${y}px; left: ${x}px; background-color: yellow;`,
+        //     textContent: text
         // });
-       	// const mathEditor = new MathEditor({
-		// 	parent: note
-		// });
+		// ---
+		const note = this.createAndAppendElement(this.dom.noteContainer, 'div', {
+            class: 'note',
+            id: id,
+            style: `absolute; top: ${y}px; left: ${x}px; width: 300px; background-color: white;`
+        });
+       	const mathEditor = new MathEditor({
+			parent: note
+		});
 		// ---
 
         this.dom.notes[id] = note;
@@ -137,11 +246,9 @@ class Freemath {
     changeBackground() {
         const canvas = this.dom.canvas;
         const config = this.background;
-        config.type = config.type || 'dot';
-        config.lineStyle = config.lineStyle || '#ccc';
-        config.lineWidth = config.lineWidth || 1;
-        config.size = config.size || 20;
-
+        if(config.type==='none') return;
+        const rect = this.dom.container.getBoundingClientRect();
+        const center = {x: rect.width*0.5, y: rect.height*0.5};
 
         canvas.style.background = 'white';
         if(config.type==='dot'){
@@ -149,6 +256,7 @@ class Freemath {
         } else if (config.type==='grid'){
             canvas.style.backgroundImage = `linear-gradient(to right, ${config.lineStyle} ${config.lineWidth}px, transparent ${config.lineWidth}px), linear-gradient(to bottom, ${config.lineStyle} ${config.lineWidth}px, transparent ${config.lineWidth}px)`;
         }
+        canvas.style.backgroundPosition = `${center.x + this.translate.x}px ${center.y + this.translate.y}px`;
         canvas.style.backgroundSize = `${config.size}px ${config.size}px`;
     }
 
