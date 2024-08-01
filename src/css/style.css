@@ -36,5 +36,30 @@ body {
 }
 
 .note.focus {
-    box-shadow: 0 0 6px #fdfa72, 0 0 6px #fdfa72, 0 0 6px #fdfa72;
+    box-shadow: 0 0 6px #fdfa72, 0 0 6px #fdfa72;
 }
+
+/* --- */
+
+@keyframes path-blink {
+    0% {
+        stroke-width: 4px;
+    }
+    50% {
+        stroke-width: 2px;
+    }
+    100% {
+        stroke-width: 4px;
+    }
+}
+
+.path {
+    cursor: pointer;
+}
+
+.path.focus {
+    stroke: #e3e166;
+    stroke-width: 4px;
+/*    animation: path-blink 1s infinite;*/
+}
+

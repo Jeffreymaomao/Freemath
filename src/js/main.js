@@ -1,3 +1,5 @@
+
+const fonts = require.context("../css/font", true);
 import '../css/normalize.css';
 import '../css/mathquill-0.10.1.css';
 import '../css/style.css';

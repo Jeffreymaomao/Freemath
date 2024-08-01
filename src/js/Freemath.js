@@ -79,7 +79,9 @@ class Freemath {
 
     containerMouseDownEvent(e){
         Object.values(this.dom.notes).forEach(note=>{note.classList.remove('focus');})
-        if(!e.target.classList.contains('note')){
+        Object.values(this.dom.paths).forEach(path=>{path.dom.classList.remove('focus');})
+        const classList = e.target.classList;
+        if(!classList.contains('note') && !classList.contains('path')){
             this.focusNote = null;
             return;
         }
@@ -90,11 +92,12 @@ class Freemath {
             // start to draw path
             this.drawingPath = true;
             const noteRect = e.target.getBoundingClientRect();
-            const centerX = noteRect.left + (noteRect.width / 2) - this.translate.x;
-            const centerY = noteRect.top + (noteRect.height / 2) - this.translate.y;
+            const centerX = noteRect.left + (noteRect.width*0.5) - this.translate.x;
+            const centerY = noteRect.top + (noteRect.height*0.5) - this.translate.y;
 
-            this.pathStart = { x: centerX, y: centerY, id: e.target.id};
-            this.dom.drawingPath = this.createBezierCurve(this.pathStart, this.pathStart);
+            const pathStart = { x: centerX, y: centerY, id: e.target.id};
+            this.dom.drawingPath = this.createBezierCurve(pathStart, pathStart);
+            this.pathStart = pathStart;
         } else {
             this.currentDraggingNote = e.target;
             this.startX = e.clientX - e.target.offsetLeft;
@@ -114,8 +117,8 @@ class Freemath {
                 if(!pathId.includes(draggingId)) return;
                 const path = this.dom.paths[pathId];
                 const noteRect = this.currentDraggingNote.getBoundingClientRect();
-                const centerX = noteRect.left + (noteRect.width / 2) - this.translate.x;
-                const centerY = noteRect.top + (noteRect.height / 2) - this.translate.y;
+                const centerX = noteRect.left + (noteRect.width*0.5) - this.translate.x;
+                const centerY = noteRect.top + (noteRect.height*0.5) - this.translate.y;
                 if(draggingId===path.start.id){
                     path.start.x = centerX;
                     path.start.y = centerY;
@@ -128,7 +131,7 @@ class Freemath {
 
         } else if(e.shiftKey && this.drawingPath && this.dom.drawingPath){
             const pathEnd = { x: e.clientX - this.translate.x, y: e.clientY - this.translate.y };
-            this.setBezierCurvePath(this.dom.drawingPath, this.pathStart, pathEnd);
+            this.setBezierCurvePath(this.dom.drawingPath, this.pathStart, pathEnd, this.pathStart.width, this.pathStart.width);
         }
     }
 
@@ -139,13 +142,15 @@ class Freemath {
             // end to draw path
             this.dom.drawingPath.remove();
             if(e.target.classList.contains('note')){
+                const pathEndId = e.target.id;
+                if(this.pathStart.id===pathEndId) return;
                 // add path
                 const noteRect = e.target.getBoundingClientRect();
-                const centerX = noteRect.left + (noteRect.width / 2) - this.translate.x;
-                const centerY = noteRect.top + (noteRect.height / 2) - this.translate.y;
+                const centerX = noteRect.left + (noteRect.width*0.5) - this.translate.x;
+                const centerY = noteRect.top + (noteRect.height*0.5) - this.translate.y;
 
-                const pathEnd = { x: centerX, y: centerY, id: e.target.id};
-                const id = `${this.pathStart.id}-${pathEnd.id}`
+                const pathEnd = { x: centerX, y: centerY, id: pathEndId};
+                const id = `${this.pathStart.id}-${pathEndId}`
                 this.dom.paths[id] = {
                     start: this.pathStart,
                     end: pathEnd,
@@ -159,28 +164,62 @@ class Freemath {
 
     containerKeyDownEvent(e){
         if(this.focusNote && e.key==='Backspace'){
-            const confirmed = window.confirm("Are you sure to delete this note?");
+            const name = this.focusNote.classList.contains("note") ? 'note' : 'path';
+            const confirmed = window.confirm(`Are you sure to delete this ${name}?`);
             if(!confirmed) return;
             const deleteId = this.focusNote.id;
             this.focusNote.remove();
             Object.keys(this.dom.paths).forEach(pathId=>{
                 if(!pathId.includes(deleteId)) return; 
                 this.dom.paths[pathId].dom.remove();
-            })
+            });
         } else if(e.metaKey || e.ctrlKey){
-            if(e.key==='e'){ // export
-                this.exportState();
+            if(e.key==='e'){
+                const filename = `freemath-${this.createTime}.json`;
+                this.exportState(filename);
+            } else if (e.key==='s'){
+                e.preventDefault();
+                const states = this.getState();
+                console.log(states)
+                // save
+            }  else if (e.key==='/'){
+                console.log('?')
             }
         }
     }
 
-    exportState(){
+    getState(){
         if(!window.MathEditors) return;
-        const states = {};
+        const states = {
+            translate: this.translate,
+            matheditor: [],
+            linkpath: []
+        };
         window.MathEditors.forEach(matheditor=>{
-            states[matheditor.id] = matheditor.states;
+            const id = matheditor.id;
+            const dom = this.dom.noteContainer.querySelector(`#${id}`);
+            const noteRect = dom.getBoundingClientRect();
+            const centerX = noteRect.left + (noteRect.width*0.5);
+            const centerY = noteRect.top + (noteRect.height*0.5);
+            const state = {
+                matheditor: matheditor.states,
+                center: {
+                    x: centerX,
+                    y: centerY,
+                }
+            };
+            states.matheditor.push(state);
         });
-        const filename = `freemath-${this.createTime}.json`
+
+        Object.keys(this.dom.paths).forEach(pathId=>{
+            states.linkpath.push(pathId.split("-"));
+        });
+        return states;
+    }
+
+    exportState(filename){
+        const states = this.getState();
+        // ------
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(states,null,4));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href",     dataStr);
@@ -190,25 +229,23 @@ class Freemath {
         downloadAnchorNode.remove()
     }
 
-    createBezierCurve(start, end) {
+    createBezierCurve(start, end, startWidth=null, endWidth=null) {
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.classList.add("path");
         path.setAttribute('fill', 'none');
-        path.setAttribute('stroke', '#000000');
-        path.setAttribute('stroke-width', '1.75');
-        this.setBezierCurvePath(path, start, end);
+        path.setAttribute('stroke', '#aaa');
+        path.setAttribute('stroke-width', '2');
+        this.setBezierCurvePath(path, start, end, startWidth, endWidth);
         this.dom.pathContainer.appendChild(path);
         return path;
     }
 
-    setBezierCurvePath(path, start, end) {
-        const x1 = start.x,
-            y1 = start.y,
-            x2 = end.x,
-            y2 = end.y;
-        const cx1 = x1 + (x2 - x1) / 3,
-            cy1 = y1,
-            cx2 = x2 - (x2 - x1) / 3,
-            cy2 = y2;
+    setBezierCurvePath(path, start, end, startWidth=null, endWidth=null) {
+        const x1 = start.x, y1 = start.y, x2 = end.x, y2 = end.y;
+        const w1 = (x2 - x1)*0.7;
+        const w2 = (x2 - x1)*0.7;
+        const cx1 = x1 + w1, cy1 = y1,
+              cx2 = x2 - w2, cy2 = y2;
         path.setAttribute('d', `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`);
     }
 
@@ -266,7 +303,7 @@ class Freemath {
         const seconds = String(now.getSeconds()).padStart(2, '0');
         const milliseconds = String(now.getMilliseconds()).padStart(2, '0');
         
-        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}:${milliseconds}`;
+        return `${year}-${month}-${day} ${hours}.${minutes}.${seconds}.${milliseconds}`;
     }
 
     hash(str){

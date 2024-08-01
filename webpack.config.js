@@ -10,7 +10,7 @@ module.exports = {
         main: './src/js/main.js'
     },
     output: {
-        filename: 'main.js',
+        filename: 'js/main.js',
         path: path.resolve(__dirname, 'dist'),
     },
     module: {
@@ -23,7 +23,7 @@ module.exports = {
                 test: /\.(svg|otf|eot|ttf|woff|woff2)$/i,
                 type: 'asset/resource',
                 generator: {
-                    filename: 'fonts/[name][ext][query]'
+                    filename: 'font/[name][ext][query]'
                 },
             }
         ],
@@ -46,5 +46,8 @@ module.exports = {
             new TerserPlugin(),
             new CssMinimizerPlugin()
         ],
+    },
+    performance: {
+        hints: false,
     },
 };
