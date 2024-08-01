@@ -53,6 +53,9 @@ class Freemath {
         this.dom.container.addEventListener('wheel', this.containerWheelEvents.bind(this), { passive: true });
         this.dom.container.addEventListener('dblclick', this.containerDoubleClickEvent.bind(this), false);
         this.dom.container.addEventListener('mousedown', this.containerMouseDownEvent.bind(this), false);
+        this.dom.container.addEventListener('dragenter', this.preventDefaults, false);
+        this.dom.container.addEventListener('dragover', this.preventDefaults, false);
+        this.dom.container.addEventListener('drop', this.containerDropEvent.bind(this), false);
         window.addEventListener('resize', this.windowResizeEvent.bind(this), false);
         document.addEventListener('keydown', this.containerKeyDownEvent.bind(this), false);
         document.addEventListener('mousemove', this.containerMouseMoveEvent.bind(this), false);
@@ -88,12 +91,64 @@ class Freemath {
         }
     }
 
+    preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
     windowResizeEvent(e){
         const previouseSize = this.windowSize;
         this.translate.x += (window.innerWidth - previouseSize.x)*0.5;
         this.translate.y += (window.innerHeight - previouseSize.y)*0.5;
         this.moveToTranslation();
         this.windowSize = {x:window.innerWidth, y:window.innerHeight};
+    }
+
+    containerDropEvent(e) {
+        this.preventDefaults(e);
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const file = files[0]; // reading first file
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const fileContent = e.target.result;
+                try {
+                    const state = JSON.parse(fileContent);
+                    this.loadState(state);
+                } catch(e){
+                    console.error(e);
+                }
+            };
+            reader.readAsText(file);
+        }
+    }
+
+    loadState(state) {
+        Object.values(this.dom.notes).forEach(note=>{
+            note.remove();
+        });
+        this.dom.notes = {};
+        this.isDarkMode = state.isDarkMode;
+        this.createTime = state.createTime;
+        this.background = state.background;
+        this.isUserToggleDarkLightMode = state.isUserToggleDarkLightMode;
+        // this.smoothMoveToTranslation(state.translate); // this.translate = state.translate;
+        this.smoothMoveToTranslation({x:0, y:0}); // this.translate = state.translate;
+        const matheditors = {};
+        state.matheditors.forEach(matheditor=>{
+            matheditors[matheditor.id] = matheditor;
+            this.addNote(matheditor.center.x, matheditor.center.y, matheditor.id, matheditor.createTime);
+        });
+        state.linkpaths.forEach(linkpath=>{
+            const startId = linkpath[0], endId = linkpath[1];
+            if(!startId || !endId) return;
+            const start = matheditors[startId];
+            const end = matheditors[endId];
+            this.createBezierCurve(start.center, end.center);
+        });
+
+
     }
 
     containerWheelEvents(e) {
@@ -247,6 +302,7 @@ class Freemath {
                 if(!pathId.includes(deleteId)) return; 
                 this.dom.paths[pathId].dom.remove();
             });
+            window.MathEditors = window.MathEditors.filter(matheditor => matheditor.id !== deleteId);
         } else if(e.metaKey || e.ctrlKey){
             if(e.key==='e'){ // export 
                 e.preventDefault();
@@ -320,16 +376,22 @@ class Freemath {
         if(!window.MathEditors) return;
         const states = {
             translate: this.translate,
-            matheditor: [],
-            linkpath: []
+            isDarkMode: this.isDarkMode,
+            isUserToggleDarkLightMode: this.isUserToggleDarkLightMode,
+            createTime: this.createTime,
+            background: this.background,
+            matheditors: [],
+            linkpaths: []
         };
         window.MathEditors.forEach(matheditor=>{
             const id = matheditor.id;
             const dom = this.dom.noteContainer.querySelector(`#${id}`);
+            if(!dom) return;
             const noteRect = dom.getBoundingClientRect();
             const centerX = noteRect.left + (noteRect.width*0.5);
             const centerY = noteRect.top + (noteRect.height*0.5);
             const state = {
+                id: id,
                 matheditor: matheditor.states,
                 center: {
                     x: centerX,
@@ -337,11 +399,11 @@ class Freemath {
                 },
                 createTime: dom.getAttribute("data-create-time")
             };
-            states.matheditor.push(state);
+            states.matheditors.push(state);
         });
 
         Object.keys(this.dom.paths).forEach(pathId=>{
-            states.linkpath.push(pathId.split("-"));
+            states.linkpaths.push(pathId.split("-"));
         });
         return states;
     }
@@ -387,8 +449,8 @@ class Freemath {
         return null;
     }
 
-    addNote(x, y) {
-    	const id = this.hash(`${x}-${y}-${Date.now()}`.padStart(50,'0')).slice(0,10)
+    addNote(x, y, id=null, createTime=null) {
+    	id = id || this.hash(`${x}-${y}-${Date.now()}`.padStart(50,'0')).slice(0,10)
 		// ---
 		const note = this.createAndAppendElement(this.dom.noteContainer, 'div', {
             class: 'note',
@@ -396,11 +458,12 @@ class Freemath {
             draggable: false,
             style: `display: block; absolute; top: ${y}px; left: ${x}px; min-width: 300px;`,
             dataset: {
-                createTime: this.getTime()
+                createTime: createTime || this.getTime()
             }
         });
        	const mathEditor = new MathEditor({
-			parent: note
+			parent: note,
+            id: id
 		});
 		// ---
         this.dom.notes[id] = note;

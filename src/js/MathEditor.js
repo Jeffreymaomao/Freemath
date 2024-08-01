@@ -1,6 +1,6 @@
 class MathEditor {
     constructor(config = {}) {
-        this.id = this.hash(Date.now().toString());
+        this.id = config.id || this.hash(Date.now().toString());
 	    this.dom = {};
         this.dom.parent = config.parent || document.body;
         this.mathquill = MathQuill.getInterface(2);
