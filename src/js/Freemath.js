@@ -4,20 +4,26 @@ class Freemath {
     constructor(config = {}) {
         this.dom = {};
         this.translate = {x:0,y:0};
-        this.background = {
+        this._background = {
         	type: 'dot', // 'dot' / 'grid' / 'none'
         	size: 20,
         	lineStyle: '#aaa',
-        	lineWidth: 1
-        };
+        	lineWidth: 1,
+            color: 'white'
+        }; // this is light default background config
+        this.background = Object.assign({}, this._background);
         this.createTime = this.getTime();
         this.dom.parent = config.parent || document.body;
         this.mouseClickStart = {x:0,y:0};
+        this.notes = [];
         this.currentDraggingNote = null;
         this.focusNote = null;
         this.drawingPath = false;
         this.pathStart = {x:0,y:0,id:null};
         this.initializeDom();
+        this.windowSize = {x:window.innerWidth, y:window.innerHeight};
+        this.isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        this.isUserToggleDarkLightMode = false;
     }
 
     initializeDom() {
@@ -36,17 +42,23 @@ class Freemath {
             style: 'display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%;'
         });
 
+        this.dom.favicon = document.querySelector('#favicon');
+
         this.dom.notes = {};
         this.dom.paths = {};
         this.changeBackground();
         this.initializeSVGLayer();
+        this.changeDarkLightModeEvent();
 
         this.dom.container.addEventListener('wheel', this.containerWheelEvents.bind(this), { passive: true });
         this.dom.container.addEventListener('dblclick', this.containerDoubleClickEvent.bind(this), false);
         this.dom.container.addEventListener('mousedown', this.containerMouseDownEvent.bind(this), false);
+        window.addEventListener('resize', this.windowResizeEvent.bind(this), false);
         document.addEventListener('keydown', this.containerKeyDownEvent.bind(this), false);
         document.addEventListener('mousemove', this.containerMouseMoveEvent.bind(this), false);
         document.addEventListener('mouseup', this.containerMouseUpEvent.bind(this), false);
+        if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', this.changeDarkLightModeEvent.bind(this), false);
+        if(window.matchMedia) window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', this.changeDarkLightModeEvent.bind(this), false);
     }
 
     initializeSVGLayer(){
@@ -59,11 +71,40 @@ class Freemath {
         this.dom.noteContainer.appendChild(pathContainer);
     }
 
+    changeDarkLightModeEvent(e){
+        if(!this.isUserToggleDarkLightMode || e) this.isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if(this.isDarkMode){ // dark mode
+            this.dom.favicon.href = "./img/freemath.dark.png";
+            this.background.lineStyle = '#888';
+            this.background.color = '#333';
+            this.changeBackground();
+            this.dom.container.classList.add("dark");
+        } else { // light mode
+            this.dom.favicon.href = "./img/freemath.light.png";
+            this.background.lineStyle = this._background.lineStyle;
+            this.background.color = this._background.color;
+            this.changeBackground();
+            this.dom.container.classList.remove("dark");
+        }
+    }
+
+    windowResizeEvent(e){
+        const previouseSize = this.windowSize;
+        this.translate.x += (window.innerWidth - previouseSize.x)*0.5;
+        this.translate.y += (window.innerHeight - previouseSize.y)*0.5;
+        this.moveToTranslation();
+        this.windowSize = {x:window.innerWidth, y:window.innerHeight};
+    }
+
     containerWheelEvents(e) {
         if(e.ctrlKey) return;
         // e.preventDefault();
         this.translate.x -= e.deltaX;
         this.translate.y -= e.deltaY;
+        this.moveToTranslation();
+    }
+
+    moveToTranslation(){
         const rect = this.dom.container.getBoundingClientRect();
         const center = {x: rect.width*0.5, y: rect.height*0.5};
         requestAnimationFrame(function(){
@@ -71,6 +112,39 @@ class Freemath {
             this.dom.canvas.style.backgroundPosition = `${center.x + this.translate.x}px ${center.y + this.translate.y}px`;
         }.bind(this));
     }
+
+    smoothMoveToTranslation(targetTranslate, duration = 500) {
+        const startTranslate = { x: this.translate.x, y: this.translate.y };
+        const startTime = performance.now();
+
+        const easeInOut = (t) => {
+            return t < 0.5
+                ? 4 * t * t * t
+                : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        };
+
+        const animate = (currentTime) => {
+            const elapsedTime = currentTime - startTime;
+            const progress = Math.min(elapsedTime / duration, 1);
+            const easedProgress = easeInOut(progress);
+
+            this.translate.x = startTranslate.x + (targetTranslate.x - startTranslate.x) * easedProgress;
+            this.translate.y = startTranslate.y + (targetTranslate.y - startTranslate.y) * easedProgress;
+
+            const rect = this.dom.container.getBoundingClientRect();
+            const center = { x: rect.width * 0.5, y: rect.height * 0.5 };
+
+            this.dom.noteContainer.style.transform = `translate(${this.translate.x}px, ${this.translate.y}px)`;
+            this.dom.canvas.style.backgroundPosition = `${center.x + this.translate.x}px ${center.y + this.translate.y}px`;
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
+        };
+
+        requestAnimationFrame(animate);
+    }
+
 
     containerDoubleClickEvent(e) {
         e.preventDefault();
@@ -174,18 +248,72 @@ class Freemath {
                 this.dom.paths[pathId].dom.remove();
             });
         } else if(e.metaKey || e.ctrlKey){
-            if(e.key==='e'){
+            if(e.key==='e'){ // export 
+                e.preventDefault();
                 const filename = `freemath-${this.createTime}.json`;
                 this.exportState(filename);
-            } else if (e.key==='s'){
+            } else if (e.key==='s'){ // save
                 e.preventDefault();
                 const states = this.getState();
                 console.log(states)
-                // save
-            }  else if (e.key==='/'){
-                console.log('?')
+            }  else if (e.key==='f'){ // fullscreen
+                e.preventDefault();
+                this.toggleFullScreen()
+            } else if (e.key==='b'){
+                if(!this.isUserToggleDarkLightMode) this.isUserToggleDarkLightMode = true;
+                this.isDarkMode = !this.isDarkMode;
+                this.changeDarkLightModeEvent();
+            }else if (e.key==='/') {
+                // console.log('?')
+            }
+        } else if (e.shiftKey) { // center matheditor
+            if(document.querySelector('.mq-focused, .focus')) return;
+            if(['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9'].includes(e.code)){
+                this.centerNote(parseInt(e.code.replace('Digit','')));
             }
         }
+    }
+
+    toggleFullScreen() {
+        const centerBefore = {
+            x: window.innerWidth*0.5,
+            y: window.innerHeight*0.5
+        };
+        const intervalId = setInterval(() => {
+            if (document.fullscreenElement || document.exitFullscreen) {
+                const centerAfter = {
+                    x: window.innerWidth*0.5,
+                    y: window.innerHeight*0.5
+                };
+                this.translate.x += centerAfter.x - centerBefore.x;
+                this.translate.y += centerAfter.y - centerBefore.y;
+                this.moveToTranslation();
+                clearInterval(intervalId);
+            }
+        }, 100);
+
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+
+    centerNote(num){
+        if(!window.MathEditors || num > window.MathEditors.length) return;
+        // num: 1,2,3,4,5,6,7,8,9
+        const id = window.MathEditors[num-1]?.id;
+        if(!id) return;
+        const centerDom = document.querySelector(`#${id}`);
+        if (!centerDom) return;
+        const noteRect = centerDom.getBoundingClientRect();
+        const targetCenterX = noteRect.left + (noteRect.width*0.5);
+        const targetCenterY = noteRect.top + (noteRect.height*0.5);
+        const targetTranslate = {
+            x: this.translate.x + window.innerWidth * 0.5 - targetCenterX,
+            y: this.translate.y + window.innerHeight * 0.5 - targetCenterY
+        };
+        this.smoothMoveToTranslation(targetTranslate, 200);
     }
 
     getState(){
@@ -206,7 +334,8 @@ class Freemath {
                 center: {
                     x: centerX,
                     y: centerY,
-                }
+                },
+                createTime: dom.getAttribute("data-create-time")
             };
             states.matheditor.push(state);
         });
@@ -233,8 +362,6 @@ class Freemath {
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.classList.add("path");
         path.setAttribute('fill', 'none');
-        path.setAttribute('stroke', '#aaa');
-        path.setAttribute('stroke-width', '2');
         this.setBezierCurvePath(path, start, end, startWidth, endWidth);
         this.dom.pathContainer.appendChild(path);
         return path;
@@ -267,7 +394,10 @@ class Freemath {
             class: 'note',
             id: id,
             draggable: false,
-            style: `display: block; absolute; top: ${y}px; left: ${x}px; min-width: 300px;`
+            style: `display: block; absolute; top: ${y}px; left: ${x}px; min-width: 300px;`,
+            dataset: {
+                createTime: this.getTime()
+            }
         });
        	const mathEditor = new MathEditor({
 			parent: note
@@ -283,7 +413,7 @@ class Freemath {
         const rect = this.dom.container.getBoundingClientRect();
         const center = {x: rect.width*0.5, y: rect.height*0.5};
 
-        canvas.style.background = 'white';
+        canvas.style.background = config.color;
         if(config.type==='dot'){
             canvas.style.backgroundImage = `radial-gradient(${config.lineStyle} ${config.lineWidth}px, transparent 0)`;
         } else if (config.type==='grid'){

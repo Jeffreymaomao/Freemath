@@ -1,10 +1,7 @@
-
-const fonts = require.context("../css/font", true);
 import '../css/normalize.css';
 import '../css/mathquill-0.10.1.css';
 import '../css/style.css';
 import '../css/matheditor.css';
- 
 import Freemath from './Freemath.js';
 
 window.addEventListener("load", (e)=>{

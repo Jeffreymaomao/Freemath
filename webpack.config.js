@@ -24,19 +24,27 @@ module.exports = {
                 type: 'asset/resource',
                 generator: {
                     filename: 'font/[name][ext][query]'
-                },
+                }
+            },
+            {
+                test: /\.(png|jpe?g|gif)$/i,
+                type: 'asset/resource',
+                generator: {
+                    filename: 'img/[name][ext][query]'
+                }
             }
         ],
     },
     plugins: [
         new HtmlWebpackPlugin({
-            template: './src/index.html',
-            inject: 'body',
+            template: './src/index.html'
         }),
         new CopyWebpackPlugin({
             patterns: [
                 { from: 'src/js/jquery-3.7.1.min.js', to: 'js/jquery-3.7.1.min.js' },
-                { from: 'src/js/mathquill-0.10.1.min.js', to: 'js/mathquill-0.10.1.min.js' }
+                { from: 'src/js/mathquill-0.10.1.min.js', to: 'js/mathquill-0.10.1.min.js' },
+                { from: './src/img/freemath.light.png', to: 'img/freemath.light.png' },
+                { from: './src/img/freemath.dark.png', to: 'img/freemath.dark.png' }
             ],
         }),
     ],

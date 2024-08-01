@@ -60,12 +60,13 @@
     border-color: #6a93d2;
     border-width: 1px 1px;
 
-/*    box-shadow: 0 0 2px #6a93d2 inset,*/
-/*                0 0 2px #6a93d2 inset;*/
+    box-shadow: 0 0 2px #6a93d2,
+                0 0 2px #6a93d2;
 }
 
 .mathnote-matheq.focus {
-/*    box-shadow: 0 0 2px #d26a93 inset, 0 0 2px #d26a93 inset;*/
+    box-shadow: 0 0 2px #d26a93,
+                0 0 2px #d26a93;
     border-color: #d26a93;
 }
 
