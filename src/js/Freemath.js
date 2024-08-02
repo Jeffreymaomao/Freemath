@@ -134,8 +134,7 @@ class Freemath {
         this.createTime = state.createTime;
         this.background = state.background;
         this.isUserToggleDarkLightMode = state.isUserToggleDarkLightMode;
-        // this.smoothMoveToTranslation(state.translate); // this.translate = state.translate;
-        this.smoothMoveToTranslation({x:0, y:0}); // this.translate = state.translate;
+        this.smoothMoveToTranslation(state.translate); // this.translate = state.translate;
         const matheditors = {};
         state.matheditors.forEach(matheditor=>{
             matheditors[matheditor.id] = matheditor;
@@ -322,34 +321,34 @@ class Freemath {
                 this.changeDarkLightModeEvent();
                 window.localStorage.setItem("isDarkMode", this.isDarkMode);
 
-            }else if (e.key==='/') {
+            } else if (e.altKey){ // center matheditor
+                // if(document.querySelector('.mq-focused, .focus')) return;
+                if(['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9'].includes(e.code)){
+                    this.centerNote(parseInt(e.code.replace('Digit','')));
+                }
+            } else if (e.key==='/') {
                 // console.log('?')
-            }
-        } else if (e.shiftKey) { // center matheditor
-            if(document.querySelector('.mq-focused, .focus')) return;
-            if(['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9'].includes(e.code)){
-                this.centerNote(parseInt(e.code.replace('Digit','')));
             }
         }
     }
 
     toggleFullScreen() {
-        const centerBefore = {
-            x: window.innerWidth*0.5,
-            y: window.innerHeight*0.5
-        };
-        const intervalId = setInterval(() => {
-            if (document.fullscreenElement || document.exitFullscreen) {
-                const centerAfter = {
-                    x: window.innerWidth*0.5,
-                    y: window.innerHeight*0.5
-                };
-                this.translate.x += centerAfter.x - centerBefore.x;
-                this.translate.y += centerAfter.y - centerBefore.y;
-                this.moveToTranslation();
-                clearInterval(intervalId);
-            }
-        }, 100);
+        // const centerBefore = {
+        //     x: window.innerWidth*0.5,
+        //     y: window.innerHeight*0.5
+        // };
+        // const intervalId = setInterval(() => {
+        //     if (document.fullscreenElement || document.exitFullscreen) {
+        //         const centerAfter = {
+        //             x: window.innerWidth*0.5,
+        //             y: window.innerHeight*0.5
+        //         };
+        //         this.translate.x += centerAfter.x - centerBefore.x;
+        //         this.translate.y += centerAfter.y - centerBefore.y;
+        //         this.moveToTranslation();
+        //         clearInterval(intervalId);
+        //     }
+        // }, 100);
 
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen();
@@ -373,6 +372,10 @@ class Freemath {
             y: this.translate.y + window.innerHeight * 0.5 - targetCenterY
         };
         this.smoothMoveToTranslation(targetTranslate, 200);
+        const centerMathEditor = window.MathEditors.find(m=>m.id===id);
+        if(!centerMathEditor) return;
+        const mathfields = Object.values(centerMathEditor.mathfields);
+        mathfields[mathfields.length-1]?.focus();
     }
 
     getState(){
@@ -390,9 +393,11 @@ class Freemath {
             const id = matheditor.id;
             const dom = this.dom.noteContainer.querySelector(`#${id}`);
             if(!dom) return;
-            const noteRect = dom.getBoundingClientRect();
-            const centerX = noteRect.left + (noteRect.width*0.5);
-            const centerY = noteRect.top + (noteRect.height*0.5);
+            // const noteRect = dom.getBoundingClientRect();
+            // const centerX = noteRect.left + (noteRect.width*0.5);
+            // const centerY = noteRect.top + (noteRect.height*0.5);
+            const centerX = parseFloat(dom.style.left.replace('px',''))
+            const centerY = parseFloat(dom.style.top.replace('px',''))
             const state = {
                 id: id,
                 matheditor: matheditor.states,
