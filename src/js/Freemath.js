@@ -59,6 +59,7 @@ class Freemath {
         this.dom.container.addEventListener('drop', this.containerDropEvent.bind(this), false);
         window.addEventListener('resize', this.windowResizeEvent.bind(this), false);
         document.addEventListener('keydown', this.containerKeyDownEvent.bind(this), false);
+        document.addEventListener('keyup', this.containerKeyUpEvent.bind(this), false);
         document.addEventListener('mousemove', this.containerMouseMoveEvent.bind(this), false);
         document.addEventListener('mouseup', this.containerMouseUpEvent.bind(this), false);
         if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', this.changeDarkLightModeEvent.bind(this), false);
@@ -126,9 +127,8 @@ class Freemath {
     }
 
     loadState(state) {
-        Object.values(this.dom.notes).forEach(note=>{
-            note.remove();
-        });
+        Object.values(this.dom.notes).forEach(note=>{note.remove();});
+        window.MathEditors = [];
         this.dom.notes = {};
         this.isDarkMode = state.isDarkMode;
         this.createTime = state.createTime;
@@ -138,7 +138,13 @@ class Freemath {
         const matheditors = {};
         state.matheditors.forEach(matheditor=>{
             matheditors[matheditor.id] = matheditor;
-            this.addNote(matheditor.center.x, matheditor.center.y, matheditor.id, matheditor.createTime);
+            this.addNote(
+                matheditor.center.x,
+                matheditor.center.y,
+                matheditor.id,
+                matheditor.createTime,
+                matheditor.matheditor,
+                matheditor.order);
         });
         state.linkpaths.forEach(linkpath=>{
             const startId = linkpath[0], endId = linkpath[1];
@@ -147,8 +153,6 @@ class Freemath {
             const end = matheditors[endId];
             this.createBezierCurve(start.center, end.center);
         });
-
-
     }
 
     containerWheelEvents(e) {
@@ -273,14 +277,15 @@ class Freemath {
             if(e.target.classList.contains('note')){
                 const pathEndId = e.target.id;
                 if(this.pathStart.id===pathEndId) return;
+                const pathId = `${this.pathStart.id}-${pathEndId}`
+                if(Object.keys(this.dom.paths).includes(pathId)) return;
                 // add path
                 const noteRect = e.target.getBoundingClientRect();
                 const centerX = noteRect.left + (noteRect.width*0.5) - this.translate.x;
                 const centerY = noteRect.top + (noteRect.height*0.5) - this.translate.y;
 
                 const pathEnd = { x: centerX, y: centerY, id: pathEndId};
-                const id = `${this.pathStart.id}-${pathEndId}`
-                this.dom.paths[id] = {
+                this.dom.paths[pathId] = {
                     start: this.pathStart,
                     end: pathEnd,
                     dom: this.createBezierCurve(this.pathStart, pathEnd)
@@ -292,6 +297,10 @@ class Freemath {
     }
 
     containerKeyDownEvent(e){
+        if(e.shiftKey && !document.querySelector(".mq-focused")){
+            this.dom.container.classList.add("drawingPath");
+        }
+        // ---
         if(this.focusNote && e.key==='Backspace'){
             const name = this.focusNote.classList.contains("note") ? 'note' : 'path';
             const confirmed = window.confirm(`Are you sure to delete this ${name}?`);
@@ -330,6 +339,10 @@ class Freemath {
                 // console.log('?')
             }
         }
+    }
+
+    containerKeyUpEvent() {
+        this.dom.container.classList.remove("drawingPath");
     }
 
     toggleFullScreen() {
@@ -393,6 +406,7 @@ class Freemath {
             const id = matheditor.id;
             const dom = this.dom.noteContainer.querySelector(`#${id}`);
             if(!dom) return;
+            const order = Array.from(dom.querySelectorAll("div")).filter(m=>m.id.includes(`${id}-`)).map(m=>m.id);
             // const noteRect = dom.getBoundingClientRect();
             // const centerX = noteRect.left + (noteRect.width*0.5);
             // const centerY = noteRect.top + (noteRect.height*0.5);
@@ -401,6 +415,7 @@ class Freemath {
             const state = {
                 id: id,
                 matheditor: matheditor.states,
+                order: order,
                 center: {
                     x: centerX,
                     y: centerY,
@@ -457,7 +472,7 @@ class Freemath {
         return null;
     }
 
-    addNote(x, y, id=null, createTime=null) {
+    addNote(x, y, id=null, createTime=null, state=null, order=null) {
     	id = id || this.hash(`${x}-${y}-${Date.now()}`.padStart(50,'0')).slice(0,10)
 		// ---
 		const note = this.createAndAppendElement(this.dom.noteContainer, 'div', {
@@ -471,7 +486,9 @@ class Freemath {
         });
        	const mathEditor = new MathEditor({
 			parent: note,
-            id: id
+            id: id,
+            states: state,
+            order: order
 		});
 		// ---
         this.dom.notes[id] = note;

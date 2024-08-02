@@ -9,10 +9,10 @@ class MathEditor {
         this._id_num = 1;
         this.focusId = null;
         this.mathfields = {};
-        this.downkeys = {};
         this.states = {};
         this.isComposing = false;
 
+        // undo method
         // https://stackoverflow.com/questions/14747537/implementin-undo-redo-in-math-editor
 
         if(!window.MathEditors){
@@ -26,8 +26,8 @@ class MathEditor {
         }
         window.MathEditors.push(this);
         window.needFocusUpDown = false;
-
         this.initializeDom();
+        if(config.states) this.loadStates(config.states, config.order);
     }
 
     createId(id) {
@@ -46,16 +46,51 @@ class MathEditor {
         this.createEquationDom();
     }
 
+    loadStates(states, order=null){
+        this.mathfields = {};
+        this.dom.container.innerHTML = '';
+        // ---
+        const progressState = (state)=>{
+            const id = state.id;
+            const id_num = parseInt(id.split('-').pop());
+            if(id_num >= this._id_num) this._id_num = id_num+1;
+            const {matheq, mathfield} = this.addMathModeArea(state);
+            this.dom.container.appendChild(matheq);
+            this.states[id] = state;
+
+            console.log(state);
+
+            if(state.latex){
+                mathfield.latex(state.latex);
+            } else if (state.text) {
+                this.addTextModeArea(matheq, mathfield, state);
+            }
+            // this.focusId = id;
+            // mathfield.focus();
+        }
+        // ---
+        if(order){
+            order.forEach(id=>{
+                progressState(states[id]);
+            });
+        } else {
+            Object.values(states).forEach((state)=>{
+                progressState(state);
+            });
+        }
+
+        this.orderLabelNum();
+    }
+
     createEquationDom() {
         const id = this.createId();
-
         const state = {
         	id: id,
             isEmpty: true,
         	latex: '',
         };
 
-        const {matheq, mathfield} = this.addMathModeArea(id, state);
+        const {matheq, mathfield} = this.addMathModeArea(state);
 
         if (!this.dom.container.lastChild || !this.dom.matheqs[this.focusId] || !this.dom.matheqs[this.focusId].nextSibling) {
             this.dom.container.appendChild(matheq); // the container is empty || focus matheq not found || focus matheq next is empty
@@ -100,7 +135,16 @@ class MathEditor {
         return label;
     }
 
-    addMathModeArea(id, state){
+    orderLabelNum(){
+        requestAnimationFrame(function(){
+            Array.from(this.dom.container.querySelectorAll(".matheq-label-num")).forEach((numLabel,index)=>{
+                numLabel.textContent = `${index+1}`;
+            });
+        }.bind(this));
+    }
+
+    addMathModeArea(state){
+        const id = state.id;
         const matheq = this.createAndAppendElement(null, "div", {
             class: "mathnote-matheq",
             id: id
@@ -145,17 +189,10 @@ class MathEditor {
         return {matheq, mathfield};
     }
 
-    orderLabelNum(){
-        requestAnimationFrame(function(){
-            Array.from(this.dom.container.querySelectorAll(".matheq-label-num")).forEach((numLabel,index)=>{
-                numLabel.textContent = `${index+1}`;
-            });
-        }.bind(this));
-    }
-
-    addTextModeArea(matheq, mathfield){
+    addTextModeArea(matheq, mathfield, _state){
         const id = matheq.id;
-        const state = this.states[id];
+        const state = this.states[id] || _state;
+        if(!state) return;
         const newMatheq = this.createAndAppendElement(null, "div", {
             class: "mathnote-matheq textmode",
             id: id
@@ -170,8 +207,18 @@ class MathEditor {
             class: "mathnote-text-textarea",
             autocapitalize: 'off',
             id: `${id}-textmode-textarea`,
-            rows: 1
+            rows: 1,
+            value: state.text || ''
         });
+        const adjustTextAreaWidth = ()=>{
+            state.text = textArea.value;
+            state.isEmpty = state.text==='';
+            textArea.style.height = 'auto';
+            textArea.style.width = 'auto';
+            textArea.style.height = (textArea.scrollHeight) + 'px';
+            textArea.style.width = (textArea.scrollWidth) + 'px';
+        }
+        setTimeout(adjustTextAreaWidth, 100);
 
         textArea.addEventListener("keydown", function(e) {
             this.handleTextKeydown(e, textArea, newMatheq);
@@ -193,19 +240,13 @@ class MathEditor {
             this.isComposing = false;
         }.bind(this), false);
 
-        textArea.addEventListener("input", function() {
-            state.text = textArea.value;
-            state.isEmpty = state.text==='';
-            textArea.style.height = 'auto';
-            textArea.style.height = (textArea.scrollHeight) + 'px';
-            textArea.style.width = 'auto';
-            textArea.style.width = (textArea.scrollWidth) + 'px'
-        }.bind(this), false);
+        textArea.addEventListener("input", adjustTextAreaWidth.bind(this), false);
 
         mathfield.blur();
         mathfield = null;
         textArea.focus();
         setTimeout(function(){
+            if(state.text) return;
             textArea.value = "";
             state.text = textArea.value;
             state.isEmpty = true;
@@ -251,7 +292,7 @@ class MathEditor {
         } else if(focusState.isEmpty && (event.ctrlKey || event.metaKey) && event.key==='/') {
             const id = this.focusId;
             const state = this.states[id];
-            const {matheq, mathfield} = this.addMathModeArea(id, state);
+            const {matheq, mathfield} = this.addMathModeArea(state);
             textModeMatheq.replaceWith(matheq);
             this.orderLabelNum();
             mathfield.focus();
