@@ -58,8 +58,6 @@ class MathEditor {
             this.dom.container.appendChild(matheq);
             this.states[id] = state;
 
-            console.log(state);
-
             if(state.latex){
                 mathfield.latex(state.latex);
             } else if (state.text) {
