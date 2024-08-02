@@ -22,8 +22,9 @@ class Freemath {
         this.pathStart = {x:0,y:0,id:null};
         this.initializeDom();
         this.windowSize = {x:window.innerWidth, y:window.innerHeight};
-        this.isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        this.isUserToggleDarkLightMode = false;
+        const localStorageDarkMode = window.localStorage.getItem("isDarkMode");
+        this.isDarkMode = `${localStorageDarkMode}` ? localStorageDarkMode==='true' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        this.isUserToggleDarkLightMode = `${localStorageDarkMode}` ? localStorageDarkMode==='true' : false;
     }
 
     initializeDom() {
@@ -48,7 +49,7 @@ class Freemath {
         this.dom.paths = {};
         this.changeBackground();
         this.initializeSVGLayer();
-        this.changeDarkLightModeEvent();
+        setTimeout(()=>{this.changeDarkLightModeEvent()},0); // since getLocalStorage may take time...
 
         this.dom.container.addEventListener('wheel', this.containerWheelEvents.bind(this), { passive: true });
         this.dom.container.addEventListener('dblclick', this.containerDoubleClickEvent.bind(this), false);
@@ -316,9 +317,11 @@ class Freemath {
                 e.preventDefault();
                 this.toggleFullScreen()
             } else if (e.key==='b'){
-                if(!this.isUserToggleDarkLightMode) this.isUserToggleDarkLightMode = true;
+                if(!this.isUserToggleDarkLightMode) { this.isUserToggleDarkLightMode = true;}
                 this.isDarkMode = !this.isDarkMode;
                 this.changeDarkLightModeEvent();
+                window.localStorage.setItem("isDarkMode", this.isDarkMode);
+
             }else if (e.key==='/') {
                 // console.log('?')
             }
