@@ -19,7 +19,6 @@ body {
 }
 
 .freemath-note-container {
-/*    border: 1px solid red;*/
 }
 
 .note {
@@ -119,8 +118,14 @@ body {
     stroke: #999;
 }
 
+/* --- */
 
-
+@media print {
+    * {
+        -webkit-print-color-adjust: exact ;
+        color-adjust: exact ;
+    }
+}
 
 
 

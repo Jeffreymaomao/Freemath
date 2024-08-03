@@ -134,7 +134,7 @@ class Freemath {
         this.createTime = state.createTime;
         this.background = state.background;
         this.isUserToggleDarkLightMode = state.isUserToggleDarkLightMode;
-        this.smoothMoveToTranslation(state.translate); // this.translate = state.translate;
+        this.smoothMoveTo(state.translate); // this.translate = state.translate;
         const matheditors = {};
         state.matheditors.forEach(matheditor => {
             matheditors[matheditor.id] = matheditor;
@@ -173,36 +173,40 @@ class Freemath {
         }.bind(this));
     }
 
-    smoothMoveToTranslation(targetTranslate, duration = 500) {
-        const startTranslate = { x: this.translate.x, y: this.translate.y };
-        const startTime = performance.now();
+    smoothMoveTo(targetTranslate, duration = 500) {
+        return new Promise((resolve) => {
+            const startTranslate = { x: this.translate.x, y: this.translate.y };
+            const startTime = performance.now();
 
-        const easeInOut = (t) => {
-            return t < 0.5 ?
-                4 * t * t * t :
-                1 - Math.pow(-2 * t + 2, 3) / 2;
-        };
+            const easeInOut = (t) => {
+                return t < 0.5 ?
+                    4 * t * t * t :
+                    1 - Math.pow(-2 * t + 2, 3) / 2;
+            };
 
-        const animate = (currentTime) => {
-            const elapsedTime = currentTime - startTime;
-            const progress = Math.min(elapsedTime / duration, 1);
-            const easedProgress = easeInOut(progress);
+            const animate = (currentTime) => {
+                const elapsedTime = currentTime - startTime;
+                const progress = Math.min(elapsedTime / duration, 1);
+                const easedProgress = easeInOut(progress);
 
-            this.translate.x = startTranslate.x + (targetTranslate.x - startTranslate.x) * easedProgress;
-            this.translate.y = startTranslate.y + (targetTranslate.y - startTranslate.y) * easedProgress;
+                this.translate.x = startTranslate.x + (targetTranslate.x - startTranslate.x) * easedProgress;
+                this.translate.y = startTranslate.y + (targetTranslate.y - startTranslate.y) * easedProgress;
 
-            const rect = this.dom.container.getBoundingClientRect();
-            const center = { x: rect.width * 0.5, y: rect.height * 0.5 };
+                const rect = this.dom.container.getBoundingClientRect();
+                const center = { x: rect.width * 0.5, y: rect.height * 0.5 };
 
-            this.dom.noteContainer.style.transform = `translate(${this.translate.x}px, ${this.translate.y}px)`;
-            this.dom.canvas.style.backgroundPosition = `${center.x + this.translate.x}px ${center.y + this.translate.y}px`;
+                this.dom.noteContainer.style.transform = `translate(${this.translate.x}px, ${this.translate.y}px)`;
+                this.dom.canvas.style.backgroundPosition = `${center.x + this.translate.x}px ${center.y + this.translate.y}px`;
 
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            }
-        };
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    resolve();
+                }
+            };
 
-        requestAnimationFrame(animate);
+            requestAnimationFrame(animate);
+        })
     }
 
 
@@ -338,7 +342,6 @@ class Freemath {
                 }
             } else if (e.key === 'p') {
                 e.preventDefault();
-                console.log("print")
                 this.printInfiniteCanvas();
             }
         }
@@ -389,7 +392,7 @@ class Freemath {
             x: this.translate.x + window.innerWidth * 0.5 - targetCenterX,
             y: this.translate.y + window.innerHeight * 0.5 - targetCenterY
         };
-        this.smoothMoveToTranslation(targetTranslate, 200);
+        this.smoothMoveTo(targetTranslate, 200);
         const centerMathEditor = window.MathEditors.find(m => m.id === id);
         if (!centerMathEditor) return;
         const mathfields = Object.values(centerMathEditor.mathfields);
@@ -509,7 +512,11 @@ class Freemath {
     changeBackground() {
         const canvas = this.dom.canvas;
         const config = this.background;
-        if (config.type === 'none') return;
+        if (config.type === 'none'){
+            canvas.style.backgroundColor = config.color;
+            canvas.style.backgroundImage = 'none';
+            return;
+        }
         const rect = this.dom.container.getBoundingClientRect();
         const center = { x: rect.width * 0.5, y: rect.height * 0.5 };
 
@@ -581,69 +588,59 @@ class Freemath {
     }
     // --- below is to print PDF
 
-    loadJsPDF(callback) {
-        if (window.jspdf) {
-            callback(window.jspdf);
-            return;
-        }
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-        script.onload = () => {
-            callback(window.jspdf);
-        };
-        script.onerror = () => {
-            console.error('Failed to load jsPDF.');
-        };
-        document.head.appendChild(script);
-    }
-
-    loadHtml2Canvas(callback) {
-        if (window.html2canvas) {
-            callback(window.html2canvas);
-            return;
-        }
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-        script.onload = () => {
-            callback(window.html2canvas);
-        };
-        script.onerror = () => {
-            console.error('Failed to load html2canvas.');
-        };
-        document.head.appendChild(script);
+    addStyle(style) {
+        const styleSheet = document.createElement("style");
+        styleSheet.type = "text/css";
+        styleSheet.media = "print";
+        styleSheet.innerText = style;
+        document.head.appendChild(styleSheet);
     }
 
     printInfiniteCanvas() {
-        this.loadJsPDF(({ jsPDF }) => {
-            this.loadHtml2Canvas((html2canvas) => {
-                const doc = new jsPDF();
-                html2canvas(this.dom.noteContainer, {
-                    useCORS: true, // 跨域處理
-                    scrollX: 0,
-                    scrollY: -window.scrollY,
-                    backgroundColor: null, // 避免背景顏色
-                    logging: true // 開啟日誌以調試
-                }).then(canvas => {
-                    const imgData = canvas.toDataURL('image/png');
-                    const imgWidth = 210; // A4 寬度（mm）
-                    const pageHeight = 295; // A4 高度（mm）
-                    const imgHeight = canvas.height * imgWidth / canvas.width;
-                    let heightLeft = imgHeight;
-                    let position = 0;
+        const range = {
+            xmin: Infinity,
+            ymin: Infinity,
+            xmax: -Infinity,
+            ymax: -Infinity,
+        };
+        const previousTranslate = {
+            x: this.translate.x,
+            y: this.translate.y
+        };
+        const previousBackgroundType = `${this.background.type}`;
+        this.background.type = 'none';
+        this.changeBackground();
 
-                    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pageHeight;
+        Object.values(this.dom.notes).forEach(note => {
+            const rect = note.getBoundingClientRect();
+            const xmin = rect.x; // top left x
+            const ymin = rect.y; // top left y
+            const xmax = rect.x + rect.width; // bottom right x
+            const ymax = rect.y + rect.height; // bottom right x
+            if (xmin < range.xmin) range.xmin = xmin;
+            if (ymin < range.ymin) range.ymin = ymin;
+            if (xmax > range.xmax) range.xmax = xmax;
+            if (ymax > range.ymax) range.ymax = ymax;
+        });
+        this.smoothMoveTo({
+            x: this.translate.x-range.xmin,
+            y: this.translate.y-range.ymin
+        }, 200).then(()=>{
+            const pWidth = (range.xmax - range.xmin);
+            const pHeight = (range.ymax - range.ymin);
 
-                    while (heightLeft >= 0) {
-                        position = heightLeft - imgHeight;
-                        doc.addPage();
-                        doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                        heightLeft -= pageHeight;
-                    }
+            this.addStyle(`@page {size: ${pWidth}px ${pHeight}px; margin: 0;}`)
+            document.title = `Freemath-${this.getTime()}`;
 
-                    doc.save('document.pdf');
-                });
-            });
+            const restorePosition = () => {
+                // reset
+                this.smoothMoveTo(previousTranslate, 200);
+                this.background.type = previousBackgroundType;
+                this.changeBackground();
+                window.removeEventListener('afterprint', restorePosition);
+            };
+            window.addEventListener('afterprint', restorePosition.bind(this), false);
+            window.print();
         });
     }
 }
