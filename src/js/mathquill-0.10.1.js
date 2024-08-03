@@ -3030,7 +3030,8 @@
             self.jQ[0].normalize();
 
             var textPcDom = self.jQ[0].firstChild;
-            pray('only node in TextBlock span is Text node', textPcDom.nodeType === 3);
+            // pray('only node in TextBlock span is Text node', textPcDom.nodeType === 3);
+            pray('only node in TextBlock span is Text node', textPcDom?.nodeType === 3);
             // nodeType === 3 has meant a Text node since ancient times:
             //   http://reference.sitepoint.com/javascript/Node/nodeType
 
