@@ -10,6 +10,11 @@ body {
 
 /* --- */
 .freemath-container {
+    cursor: grab;
+}
+
+.freemath-container.dragging {
+    cursor: grabbing;
 }
 
 .freemath-canvas {
@@ -117,6 +122,18 @@ body {
 .freemath-container.dark .path {
     stroke: #999;
 }
+
+
+.freemath-container.dark .mq-math-mode .mq-selection,
+.freemath-container.dark .mq-editable-field .mq-selection,
+.freemath-container.dark .mq-math-mode .mq-selection .mq-non-leaf,
+.freemath-container.dark .mq-editable-field .mq-selection .mq-non-leaf,
+.freemath-container.dark .mq-math-mode .mq-selection .mq-scaled,
+.freemath-container.dark .mq-editable-field .mq-selection .mq-scaled {
+    background: #6190c9 !important;
+    color: white;
+}
+
 
 /* --- */
 

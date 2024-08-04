@@ -15,7 +15,8 @@ class Freemath {
         this.createTime = this.getTime();
         this.dom.parent = config.parent || document.body;
         this.mouseClickStart = { x: 0, y: 0 };
-        this.notes = [];
+        this.isDraggingCanvas = false;
+        this.draggingCanvasStart = { x: 0, y: 0 };
         this.currentDraggingNote = null;
         this.focusNote = null;
         this.drawingPath = false;
@@ -221,6 +222,10 @@ class Freemath {
         const classList = e.target.classList;
         if (!classList.contains('note') && !classList.contains('path')) {
             this.focusNote = null;
+            this.isDraggingCanvas = true;
+            this.draggingCanvasStart.x = e.clientX;
+            this.draggingCanvasStart.y = e.clientY;
+            this.dom.container.classList.add("dragging");
             return;
         }
         this.focusNote = e.target;
@@ -270,10 +275,20 @@ class Freemath {
         } else if (e.shiftKey && this.drawingPath && this.dom.drawingPath) {
             const pathEnd = { x: e.clientX - this.translate.x, y: e.clientY - this.translate.y };
             this.setBezierCurvePath(this.dom.drawingPath, this.pathStart, pathEnd, this.pathStart.width, this.pathStart.width);
+        } else if (this.isDraggingCanvas) {
+            const deltaX = e.clientX - this.draggingCanvasStart.x;
+            const deltaY = e.clientY - this.draggingCanvasStart.y;
+            this.translate.x += deltaX;
+            this.translate.y += deltaY;
+            this.moveToTranslation();
+            this.draggingCanvasStart.x = e.clientX;
+            this.draggingCanvasStart.y = e.clientY;
         }
     }
 
     containerMouseUpEvent(e) {
+        this.isDraggingCanvas = false;
+        this.dom.container.classList.remove("dragging");
         if (this.currentDraggingNote) {
             this.currentDraggingNote = null;
         } else if (this.drawingPath && this.dom.drawingPath) {

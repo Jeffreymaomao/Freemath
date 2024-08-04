@@ -76,7 +76,7 @@
 
 .mq-math-mode .mq-root-block {
     padding: 15px;
-    overflow-x: scroll;
+    overflow: hidden;
 }
 
 .mathnote-matheq.textmode textarea.mathnote-text-textarea {
@@ -132,5 +132,18 @@
 
 .mq-editable-field .mq-latex-command-input {
     border: 0.1px solid gray;
+}
+
+/* --- */
+
+.mq-math-mode .mq-selection,
+.mq-editable-field .mq-selection,
+.mq-math-mode .mq-selection .mq-non-leaf,
+.mq-editable-field .mq-selection .mq-non-leaf,
+.mq-math-mode .mq-selection .mq-scaled,
+.mq-editable-field .mq-selection .mq-scaled {
+    background: #B4D5FE !important;
+    color: HighlightText;
+    border-color: HighlightText;
 }
 

@@ -249,6 +249,8 @@ class MathEditor {
             state.text = textArea.value;
             state.isEmpty = true;
         }, 0);
+
+        this.orderLabelNum();
         this.dom.matheqs[id] = newMatheq;
         this.mathfields[id] = textArea;
         delete state.latex;
