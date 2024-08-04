@@ -1,4 +1,4 @@
-# <img src="src/img/freemath.light.png" width="50px" style="vertical-align:bottom"> Freemath
+# <img src="src/img/freemath.light.png" width="50px" style="vertical-align:middle"> Freemath
 
 Freemath is an innovative web application designed for creating and managing mathematical notes on an infinitely large canvas. Leveraging MathQuill for fast LaTeX editing of mathematical formulas, Freemath enables users to create various mathematical blocks and seamlessly connect them. The interactive environment allows for flexible note-taking and organization on a virtually limitless workspace.
 
