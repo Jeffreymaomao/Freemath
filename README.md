@@ -8,12 +8,15 @@ Freemath is an online application. To start using it, simply visit [https://free
 
 ## Usage
 
-| Action                         | Method                                                       |
+| Action (in Note)               | Method                                                       |
 | ------------------------------ | ------------------------------------------------------------ |
 | Add New Note                   | `Double Click`                                               |
 | Add New Equation               | <kbd>Enter</kbd>                                             |
 | Switch Between Equation        | <kbd>⬆</kbd> or <kbd>⬇</kbd>                                 |
 | Toogle Math / Text Mode        | <kbd>Cmd</kbd> + <kbd>/</kbd> ( in Windows <kbd>Ctrl</kbd> + <kbd>/</kbd> ) |
+
+| Action (in Canva)           | Method                                                   |
+| ------------------------------ | ------------------------------------------------------------ |
 | Add Linking Path               | <kbd>Shift</kbd> + `Click Note(edge)` + `Drag`               |
 | Move Note                      | `Drag Note(edge)`                                            |
 | Move Canvas                    | `Drag Canvas(edge)` or `Scroll Wheel`                        |
@@ -22,6 +25,7 @@ Freemath is an online application. To start using it, simply visit [https://free
 | Import State from `JSON` file  | `Drag` + `Drop` the file                                     |
 | Print the canvas to `PDF` file | <kbd>Cmd</kbd> + <kbd>p</kbd> ( in Windows <kbd>Ctrl</kbd> + <kbd>p</kbd> ) |
 | Toogle Dark / Light Mode       | <kbd>Cmd</kbd> + <kbd>b</kbd> ( in Windows <kbd>Ctrl</kbd> + <kbd>b</kbd> ) |
+| Toogle Full Screen Mode        | <kbd>Cmd</kbd> + <kbd>f</kbd> ( in Windows <kbd>Ctrl</kbd> + <kbd>f</kbd> ) |
 
 ## Limitations
 

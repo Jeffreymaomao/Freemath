@@ -217,34 +217,47 @@ class Freemath {
     }
 
     containerMouseDownEvent(e) {
+        // remove focus
         Object.values(this.dom.notes).forEach(note => { note.classList.remove('focus'); })
         Object.values(this.dom.paths).forEach(path => { path.dom.classList.remove('focus'); })
-        const classList = e.target.classList;
-        if (!classList.contains('note') && !classList.contains('path')) {
+        const targetClassList = e.target.classList;
+        const targetIsNote = targetClassList.contains('note')
+        const targetIsPath = targetClassList.contains('path');
+        const parentNoteDom = this.findParentWithSelector(e.target, '.note');
+        
+        if(!targetIsNote && !targetIsPath){
             this.focusNote = null;
-            this.isDraggingCanvas = true;
-            this.draggingCanvasStart.x = e.clientX;
-            this.draggingCanvasStart.y = e.clientY;
-            this.dom.container.classList.add("dragging");
+            if (!parentNoteDom) {
+                this.isDraggingCanvas = true;
+                this.draggingCanvasStart.x = e.clientX;
+                this.draggingCanvasStart.y = e.clientY;
+                this.dom.container.classList.add("dragging");
+            }
             return;
         }
-        this.focusNote = e.target;
-        this.focusNote.classList.add("focus");
 
         if (e.shiftKey && !this.drawingPath && !this.dom.drawingPath) {
             // start to draw path
             this.drawingPath = true;
-            const noteRect = e.target.getBoundingClientRect();
+            const noteRect = parentNoteDom.getBoundingClientRect();
             const centerX = noteRect.left + (noteRect.width * 0.5) - this.translate.x;
             const centerY = noteRect.top + (noteRect.height * 0.5) - this.translate.y;
 
-            const pathStart = { x: centerX, y: centerY, id: e.target.id };
+            const pathStart = { x: centerX, y: centerY, id: parentNoteDom.id };
             this.dom.drawingPath = this.createBezierCurve(pathStart, pathStart);
             this.pathStart = pathStart;
-        } else {
-            this.currentDraggingNote = e.target;
-            this.startX = e.clientX - e.target.offsetLeft;
-            this.startY = e.clientY - e.target.offsetTop;
+        } else if(targetIsNote) {
+            // focus note
+            this.focusNote = parentNoteDom;
+            this.focusNote.classList.add("focus");
+            // dradding note
+            this.currentDraggingNote = parentNoteDom;
+            this.startX = e.clientX - parentNoteDom.offsetLeft;
+            this.startY = e.clientY - parentNoteDom.offsetTop;
+        }  else if(targetIsPath) {
+            // focus path
+            this.focusNote = e.target;
+            this.focusNote.classList.add("focus");
         }
     }
 
@@ -327,6 +340,7 @@ class Freemath {
             if (!confirmed) return;
             const deleteId = this.focusNote.id;
             this.focusNote.remove();
+            delete this.dom.notes[deleteId];
             Object.keys(this.dom.paths).forEach(pathId => {
                 if (!pathId.includes(deleteId)) return;
                 this.dom.paths[pathId].dom.remove();
