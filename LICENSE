@@ -1,3 +1,37 @@
+# License
+=========
+
+This project includes code from MathQuill, which is licensed under the Mozilla Public License 2.0 (MPL 2.0).
+
+## Original License
+
+The full text of the Mozilla Public License 2.0 (MPL 2.0) can be found at:
+
+[Mozilla Public License 2.0 (MPL 2.0)](https://raw.githubusercontent.com/mathquill/mathquill/master/LICENSE)
+
+## Modifications
+
+We have modified the MathQuill code. The modifications include changes to the `moveUpDown` function to add custom focus handling. Specifically, the following line was added:
+
+```js
+function moveUpDown(self, dir) {
+    ...
+    if (typeof prop === 'function'){
+        prop = ancestor[dirOutOf](cursor);
+        window.needFocusUpDown = true; // this means the focus should jump to next/previous equation (by mao)
+    }
+    ...
+}
+```
+
+The original MathQuill code and license information can be found at:
+[MathQuill GitHub Repository](https://github.com/mathquill/mathquill)
+
+Specifically, the `moveUpDown` function can be found at:
+https://github.com/mathquill/mathquill/blob/master/src/services/keystroke.ts
+
+## My License
+
 MIT License
 
 Copyright (c) 2024 Chang-Mao, Yang

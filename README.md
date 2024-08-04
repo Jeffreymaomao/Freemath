@@ -7,52 +7,30 @@ Freemath is an innovative web application designed for creating and managing mat
 - **Infinite Canvas:** Seamlessly scroll and zoom on an expansive canvas to create and manage notes.
 - **MathQuill Integration:** Edit mathematical expressions using MathQuill, allowing for complex math notation.
 - **Dynamic Note Handling:** Add and reposition notes, and draw connections between them.
-- **Resizable and Scrollable Text Areas:** Text areas automatically adjust their size based on content.
 
 ## Getting Started
 
-To get started with Freemath, follow these simple steps:
-
-1. **Clone the Repository:**
-
-   ```bash
-   git clone https://github.com/yourusername/freemath.git
-   cd freemath
-   ```
-
-2. **Build the Project:**
-
-   The project uses Webpack for bundling. Ensure you have Webpack installed, then run:
-
-   ```bash
-   npx webpack --config webpack.config.js
-   ```
-
-   This will generate the necessary files in the `dist/` directory.
-
-3. **Open the Application:**
-
-   Simply open the `dist/index.html` file in your web browser to start using Freemath.
-
-   ```bash
-   open dist/index.html
-   ```
-
-## File Structure
-
-- **`src/`**: Contains the source code for the application.
-- **`dist/`**: Contains the bundled files and `index.html` for running the application.
-- **`webpack.config.js`**: Webpack configuration file for bundling the application.
+This is online application, just go to [https://freemath-mao.netlify.app/](https://freemath-mao.netlify.app/) to get start.
 
 ## Usage
 
-- **Add Notes:** Click on the canvas to create new notes.
-- **Edit Math Equations:** Use MathQuill to input and edit mathematical expressions within notes.
-- **Move and Resize:** Drag and resize notes as needed. 
+| Action                         | Method                                                       |
+| ------------------------------ | ------------------------------------------------------------ |
+| Add New Note                   | `Double Click`                                               |
+| Add New Equation               | <kbd>Enter</kbd>                                             |
+| Switch Between Equation        | <kbd>⬆</kbd> or <kbd>⬇</kbd>                                 |
+| Toogle Math / Text Mode        | <kbd>Cmd</kbd> + <kbd>/</kbd> ( in Windows <kbd>Ctrl</kbd> + <kbd>/</kbd> ) |
+| Add Linking Path               | <kbd>Shift</kbd> + `Click Note(edge)` + `Drag`               |
+| Move Note                      | `Drag Note(edge)`                                            |
+| Move Canvas                    | `Drag Canvas(edge)` or `Scroll Wheel`                        |
+| Export State to `JSON` file    | <kbd>Cmd</kbd> + <kbd>e</kbd> ( in Windows <kbd>Ctrl</kbd> + <kbd>e</kbd> ) |
+| Import State from `JSON` file  | `Drag` + `Drop` the file                                     |
+| Print the canvas to `PDF` file | <kbd>Cmd</kbd> + <kbd>p</kbd> ( in Windows <kbd>Ctrl</kbd> + <kbd>p</kbd> ) |
 
-## Contributing
+\## Dependencies
 
-Contributions are welcome! Please fork the repository and submit a pull request with your proposed changes.
+- **MathQuill**: A library for LaTeX math editing. [MathQuill Documentation](https://github.com/mathquill/mathquill) 
+    - **jQuery**: MathQuill depends on jQuery for its functionality. [jQuery Documentation](https://jquery.com/)
 
 ## License
 
