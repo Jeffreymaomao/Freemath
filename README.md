@@ -21,6 +21,7 @@ Freemath is an online application. To start using it, simply visit [https://free
 | Export State to `JSON` file    | <kbd>Cmd</kbd> + <kbd>e</kbd> ( in Windows <kbd>Ctrl</kbd> + <kbd>e</kbd> ) |
 | Import State from `JSON` file  | `Drag` + `Drop` the file                                     |
 | Print the canvas to `PDF` file | <kbd>Cmd</kbd> + <kbd>p</kbd> ( in Windows <kbd>Ctrl</kbd> + <kbd>p</kbd> ) |
+| Toogle Dark / Light Mode       | <kbd>Cmd</kbd> + <kbd>b</kbd> ( in Windows <kbd>Ctrl</kbd> + <kbd>b</kbd> ) |
 
 ## Limitations
 
