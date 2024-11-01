@@ -32,8 +32,13 @@ Freemath is an online application. To start using it, simply visit [https://free
 Since this project is based on MathQuill, there are some limitations:
 
 - Cannot **Undo** and **Redo** changes
+
 - Cannot define new LaTeX commands
+
 - Cannot use **alignment** or **matrix** environments
+
+> Unsupported LaTeX commands include: `\dot`, `\ddot`, `\overline`, `\underline`, `\underbrace`, `\lim`, ...
+> This list is not exhaustive and other LaTeX commands may also be unsupported.
 
 ## Dependencies
 
